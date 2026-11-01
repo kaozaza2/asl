@@ -217,8 +217,18 @@ class DistroDocumentsProvider : DocumentsProvider() {
 
     override fun createDocument(parentDocumentId: String, mimeType: String, displayName: String): String {
         val isDir = mimeType == Document.MIME_TYPE_DIR
-        val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)
-        val name = if (isDir || extension == null || displayName.endsWith(".$extension")) displayName else "$displayName.$extension"
+        val mime = MimeTypeMap.getSingleton()
+        val extension = mime.getExtensionFromMimeType(mimeType)
+        // The name's own extension, when the name carries one ("notes.txt", not "archive.").
+        val nameExtension = displayName.substringAfterLast('.', "").lowercase()
+        val hasExtension = displayName.contains('.') && nameExtension.isNotEmpty()
+        val name = when {
+            isDir || extension == null || displayName.endsWith(".$extension") -> displayName
+            // Editors pass the real filename with a generic type ("notes.save" as octet-stream); trust the name.
+            hasExtension && mimeType == "application/octet-stream" -> displayName
+            hasExtension && mime.getMimeTypeFromExtension(nameExtension) == mimeType -> displayName
+            else -> "$displayName.$extension"
+        }
         val parent = DocumentId.parse(parentDocumentId)
         val documentId = generateSequence(0) { it + 1 }.take(100)
             .map { i -> if (i == 0) name else "${name.substringBeforeLast('.')} ($i)${name.substring(name.substringBeforeLast('.').length)}" }

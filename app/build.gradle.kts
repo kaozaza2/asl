@@ -16,6 +16,16 @@ android {
         ndk { abiFilters += "arm64-v8a" }
     }
 
+    // One embedded debug key for every machine, so a locally built APK updates over a CI-built one and vice versa.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = true

@@ -7,6 +7,7 @@ import android.media.AudioManager
 import android.media.ToneGenerator
 import android.os.Bundle
 import android.view.HapticFeedbackConstants
+import android.view.KeyEvent
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
@@ -259,6 +260,33 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         vm.handleIntent(intent)
+    }
+
+    // iTerm-style shortcuts from a physical keyboard: cmd+T opens a new tab, cmd+shift+N opens a
+    // tab with profile N, and cmd+N activates tab N; N past the end selects the last tab, like
+    // iTerm's cmd+9.
+    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
+        if (event.action != KeyEvent.ACTION_DOWN || !event.isMetaPressed || event.isCtrlPressed || event.isAltPressed) {
+            return super.dispatchKeyEvent(event)
+        }
+        val index = when (event.keyCode) {
+            in KeyEvent.KEYCODE_1..KeyEvent.KEYCODE_9 -> event.keyCode - KeyEvent.KEYCODE_1
+            in KeyEvent.KEYCODE_NUMPAD_1..KeyEvent.KEYCODE_NUMPAD_9 -> event.keyCode - KeyEvent.KEYCODE_NUMPAD_1
+            else -> -1
+        }
+        when {
+            event.keyCode == KeyEvent.KEYCODE_T -> vm.openDefaultTab()
+            index >= 0 && event.isShiftPressed -> {
+                Asl.settings.settings.value.visibleProfiles(Asl.distros.distros.value).getOrNull(index)?.let(vm::openTab)
+            }
+            index >= 0 -> {
+                // Fewer tabs than the index selects the last tab, matching iTerm's cmd+9.
+                val tabs = vm.tabs.value
+                (tabs.getOrNull(index) ?: tabs.lastOrNull())?.let { vm.selected.value = it.id } ?: return super.dispatchKeyEvent(event)
+            }
+            else -> return super.dispatchKeyEvent(event)
+        }
+        return true
     }
 
     override fun onDestroy() {

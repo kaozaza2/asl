@@ -22,6 +22,8 @@ Run real Linux distributions on Android the way WSL2 runs them on Windows. ASL b
 | systemd | `[boot] systemd=true` runs the distro's systemd as PID 1 in its namespace |
 | Windows Terminal | Tab strip, profiles and color schemes with the same `settings.json` shape, a native terminal (Termux's emulator), an extra-keys row for touch keyboards |
 
+With a physical keyboard attached, the terminal behaves like iTerm: **cmd+T** opens a new tab (the Mac cmd key is Android's Meta/Windows key), **cmd+shift+1–9** opens a tab with the profile at that index, and **cmd+1–9** switches to the tab at that index — an index past the last tab selects the last tab, like iTerm's cmd+9.
+
 ## Requirements
 
 - An arm64 device with **Android 15 or later** and AVF with pKVM. Check with:
@@ -46,6 +48,8 @@ guest/build.sh                       # builds the kernel Image and initrd.img in
 ./gradlew :app:assembleDebug
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
+
+Debug APKs are signed with the key embedded in `app/debug.keystore` (password `android`, alias `androiddebugkey`). It is committed on purpose — it is only for debug signing — so locally built APKs and CI-built ones are packed with the same key and install over each other without uninstalling.
 
 Then grant the permissions above, open ASL, and install a distribution from Settings → Distributions.
 
