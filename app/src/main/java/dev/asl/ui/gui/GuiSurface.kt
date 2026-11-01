@@ -1,6 +1,7 @@
 package dev.asl.ui.gui
 
 import android.content.Context
+import dev.asl.R
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -55,10 +56,10 @@ class GuiSurface(
     private var lastY = 0f
     private var tapX = 0f
     private var tapY = 0f
-    private var tapAt = 0f
+    private var tapAt = 0L
 
     private val touchSlop = ViewConfiguration.get(context).scaledTouchSlop
-    private val tapTimeout = ViewConfiguration.getDoubleTapTimeout().toFloat()
+    private val tapTimeout = ViewConfiguration.getDoubleTapTimeout().toLong()
 
     private val scaleDetector = ScaleGestureDetector(context, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
         override fun onScaleBegin(detector: ScaleGestureDetector): Boolean = multiTouch && bitmap != null

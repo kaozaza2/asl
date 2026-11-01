@@ -30,13 +30,13 @@ class RfbClient(
 
     /** Blocks until the stream ends (the update loop) or the handshake fails; run on Dispatchers.IO. */
     fun run() {
-        handshake()
-        updates()
+        val (width, height) = handshake()
+        updates(width, height)
     }
 
-    private fun handshake() {
+    private fun handshake(): Pair<Int, Int> {
         val minor = minorVersion(readBytes(12))
-        if (minor > 8) throw IOException("unsupported server protocol RFB 003.0$minor")
+        if (minor > 8) throw IOException("unsupported server protocol RFB 003.$minor")
         output.write("RFB 003.008\n".toByteArray())
         val types = input.readUnsignedByte()
         val chosen = (1..types).map { input.readUnsignedByte() }.singleOrNull { it == TYPE_NONE }
@@ -67,10 +67,10 @@ class RfbClient(
         output.writeInt(ENCODING_COPYRECT)
         output.writeInt(ENCODING_RAW)
         request(0, 0, width, height, incremental = false)
-        updates()
+        return width to height
     }
 
-    private fun updates() {
+    private fun updates(width: Int, height: Int) {
         try {
             while (true) {
                 input.readUnsignedByte() // FramebufferUpdate
@@ -112,7 +112,7 @@ class RfbClient(
         synchronized(output) {
             output.write(3) // SetFramebufferUpdateRequest
             output.write(if (incremental) 1 else 0)
-            output.writeShort(x.toShort()); output.writeShort(y.toShort()); output.writeShort(width.toShort()); output.writeShort(height.toShort())
+            output.writeShort(x); output.writeShort(y); output.writeShort(width); output.writeShort(height)
             output.flush()
         }
     }
@@ -121,8 +121,8 @@ class RfbClient(
         synchronized(output) {
             output.write(5) // PointerEvent
             output.write(mask)
-            output.writeShort(x.toShort())
-            output.writeShort(y.toShort())
+            output.writeShort(x)
+            output.writeShort(y)
             output.flush()
         }
     }
@@ -141,10 +141,10 @@ class RfbClient(
 
     private fun readBytes(count: Int): ByteArray = ByteArray(count).also { input.readFully(it) }
 
-    /** "RFB 003.008\n" → 8; the highest minor version both sides know is the negotiated one. */
+    /** "RFB 003.008\n" → 8: bytes[9] is the minor version's ASCII digit ('0'-'9'). */
     private fun minorVersion(bytes: ByteArray): Int {
         if (!String(bytes, Charsets.ISO_8859_1).startsWith("RFB 003.0")) throw IOException("not an RFB server")
-        return bytes[9].code
+        return bytes[9].toInt() - '0'.code
     }
 
     private companion object {

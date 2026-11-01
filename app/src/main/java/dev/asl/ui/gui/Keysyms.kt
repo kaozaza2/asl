@@ -54,7 +54,7 @@ object Keysyms {
         // Ctrl/Alt/Shift are already separate X modifier events; the letter's keysym needs only
         // its shift state, so other meta state must not distort the character.
         val shift = e.metaState and KeyEvent.META_SHIFT_MASK
-        val caps = e.metaState and KeyEvent.META_CAPS_LOCK_MASK
+        val caps = e.metaState and KeyEvent.META_CAPS_LOCK_ON // the lock modifiers have no MASK variant
         val unicode = e.getUnicodeChar(shift or caps)
         return when {
             unicode in 0x20..0xff -> unicode // Latin-1 keysyms mirror the codepoints

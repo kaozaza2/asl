@@ -5,6 +5,7 @@ import android.media.AudioFormat
 import android.media.AudioTrack
 import dev.asl.core.AgentConnection
 import dev.asl.core.Asl
+import dev.asl.core.openAgentChannel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
