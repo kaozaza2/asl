@@ -45,6 +45,8 @@ data class Profile(
     val tabTitle: String? = null,
     val hidden: Boolean = false,
     val appearance: ProfileAppearance? = null,
+    /** WSLg-style profile: a GUI window of the distro's display server instead of a terminal tab. */
+    val gui: Boolean = false,
 )
 
 @Serializable

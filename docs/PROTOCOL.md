@@ -96,6 +96,10 @@ Header: `{"svc":"forward","port":8080}` → reply, then spliced to `127.0.0.1:80
 Host→guest is **chunked** (EOF chunk = client half-closed → agent does `shutdown(SHUT_WR)` on the TCP side); guest→host is raw bytes, and the agent half-closes vsock when the guest server half-closes.
 Host side binds `127.0.0.1:<port>` (or `0.0.0.0` when `bindAllInterfaces`) for every reported port; ports `< 1024` are never forwarded (Android apps lack CAP_NET_BIND_SERVICE).
 
+### `display` — GUI desktop (WSLg)
+Header: `{"svc":"display","distro":"<id>","port":5900}` → reply `{"ok":true,"display":":0","port":N}`.
+Starts the distro's X server **inside its namespaces** (the same nsenter/su pipeline as sessions), so apps in the distro see the X socket at `/tmp/.X11-unix/X0`; a window (a `distro:<index>` in registry order, sent by the host as `5900 + index`) serves its framebuffer to the host. The session service exports `DISPLAY=:0` for the distro while the server runs; when the distro stops the server dies with its PID namespace. Server flavors probed inside the distro: `Xvnc` (TigerVNC), else `Xvfb` + `x11vnc`; the script logs to `/var/log/asl-xvnc.log`. Once the port is listening the host opens `{"svc":"forward","port":N}` and speaks RFB 3.8 (raw + copyrect encodings) over it — that is the GUI window's stream.
+
 ### `usbip` — USB passthrough (USB/IP, like usbipd-win)
 Header: `{"svc":"usbip","busid":"1-2","devid":65538,"speed":3}` (speed per Linux `enum usb_device_speed`: 1 low, 2 full, 3 high, 5 super).
 Agent picks a free `vhci_hcd` port (HS hub, or SS hub when speed ≥ 5) from `/sys/devices/platform/vhci_hcd.0/status`, replies `{"ok":true,"port":N}` **first** (the kernel may send `CMD_SUBMIT` the moment attach succeeds), then writes `"<port> <fd> <devid> <speed>"` to `.../attach` using this vsock fd. If attach fails the agent closes the socket.

@@ -42,6 +42,10 @@ type distro struct {
 	mounted bool
 	// oobeClaimed keeps a second tab from starting the image's first-run setup while one is running.
 	oobeClaimed atomic.Bool
+	// displayMu serializes display-server setup; display (port, 0 when off) is what the session
+	// service exports as DISPLAY=:0. Both reset when the distro stops.
+	displayMu sync.Mutex
+	display   atomic.Int32
 }
 
 // holderSpec is everything distro-init needs; it is passed in the ASL_DISTRO environment variable.
@@ -224,6 +228,7 @@ func (a *agent) start(d *distro) (int, error) {
 		d.mu.Lock()
 		d.pid = 0
 		d.mu.Unlock()
+		d.display.Store(0)
 		close(done)
 		log.Printf("distro %s stopped (exit %d)", d.ID, exitCode(ws))
 		a.emit(obj{"event": "distro", "distro": d.ID, "state": "stopped"})

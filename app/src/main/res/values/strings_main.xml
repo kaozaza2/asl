@@ -10,4 +10,7 @@
     <string name="main_no_tabs">No open tabs</string>
     <string name="main_no_tabs_body">Open a profile to start a shell.</string>
     <string name="main_open_tab">Open a new tab</string>
+    <string name="gui_connecting">Connecting to the display server…</string>
+    <string name="gui_disconnected">Display connection closed: %1$s</string>
+    <string name="gui_closed">The graphical session ended.</string>
 </resources>

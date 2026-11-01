@@ -51,6 +51,7 @@ var devLinks = map[string]string{
 var services = map[string]func(*agent, *conn, []byte) error{
 	"control": (*agent).control,
 	"session": (*agent).session,
+	"display": (*agent).display,
 	"fs":      (*agent).fs,
 	"file":    (*agent).file,
 	"forward": (*agent).forward,

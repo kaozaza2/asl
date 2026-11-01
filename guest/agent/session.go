@@ -86,6 +86,10 @@ func (a *agent) session(c *conn, raw []byte) error {
 		}
 		script = append(script, "export "+k+"="+shellQuote(h.Env[k]))
 	}
+	// GUI: like WSLg's env injection, sessions can drive the distro's display server when one is up.
+	if d.display.Load() != 0 {
+		script = append(script, "export DISPLAY=:0")
+	}
 	switch {
 	case h.Cwd == "" || h.Cwd == "~":
 	case strings.HasPrefix(h.Cwd, "~/"):

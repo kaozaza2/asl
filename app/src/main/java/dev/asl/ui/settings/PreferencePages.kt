@@ -136,6 +136,7 @@ class ProfileFragment : StorePreferenceFragment() {
             "user" to textField(get = { profile(it)?.user }) { s, v -> edit(s) { it.copy(user = v) } },
             "tabTitle" to textField(get = { profile(it)?.tabTitle }) { s, v -> edit(s) { it.copy(tabTitle = v) } },
             "hidden" to Field({ profile(it)?.hidden }, { s, v -> edit(s) { it.copy(hidden = v as Boolean) } }),
+            "gui" to Field({ profile(it)?.gui == true }, { s, v -> edit(s) { it.copy(gui = v as Boolean) } }),
             "overrideAppearance" to Field({ profile(it)?.appearance != null }, { s, v ->
                 edit(s) { it.copy(appearance = if (v as Boolean) it.appearance ?: s.profiles.defaults else null) }
             }),

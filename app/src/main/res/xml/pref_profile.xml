@@ -49,6 +49,12 @@
             app:key="hidden"
             app:title="@string/settings_hidden"
             app:iconSpaceReserved="false" />
+
+        <SwitchPreferenceCompat
+            app:key="gui"
+            app:title="@string/settings_gui"
+            app:summary="@string/settings_gui_summary"
+            app:iconSpaceReserved="false" />
     </PreferenceCategory>
 
     <PreferenceCategory

@@ -65,6 +65,8 @@
     <string name="settings_group_profiles">Profiles</string>
     <string name="settings_hex_format" translatable="false">#RRGGBB</string>
     <string name="settings_hidden">Hide profile from dropdown</string>
+    <string name="settings_gui">Graphical application</string>
+    <string name="settings_gui_summary">Open a GUI window with the distribution\'s display server instead of a terminal. Requires an X server with VNC (Xvnc, or Xvfb with x11vnc) installed in the distribution.</string>
     <string name="settings_history_size">History size</string>
     <string name="settings_history_size_summary">Lines kept in the scrollback buffer.</string>
     <string name="settings_icon">Icon</string>

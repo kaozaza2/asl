@@ -17,6 +17,7 @@ Run real Linux distributions on Android the way WSL2 runs them on Windows. ASL b
 | `\\wsl$\<distro>` in Explorer | A DocumentsProvider root per distro, "ASL: &lt;name&gt;", in the Files app and every file picker |
 | `/mnt/c` automount | Android shared storage at `/mnt/android`, served by a 9P2000.L server in the app |
 | localhost forwarding | Guest TCP listeners on ports ≥ 1024 are bound on Android's `127.0.0.1`/`::1`, or on all interfaces |
+| WSLg — Linux GUI apps | GUI profiles open a window showing the distro's desktop: the agent runs an X server with a VNC port inside the distro (Xvnc, or Xvfb with x11vnc), and an RFB client renders it over the forward service; terminal sessions get `DISPLAY=:0` while it runs. Apps appear in one desktop per distro, not as separate windows like WSLg. |
 | usbipd-win | USB passthrough over USB/IP: Android is the server, the guest's `vhci_hcd` attaches over vsock |
 | `wsl.conf` / `.wslconfig` | `/etc/wsl.conf` (`[boot]`, `[user]`, `[network]`, `[automount]`) in each distro / Settings → Virtual machine |
 | systemd | `[boot] systemd=true` runs the distro's systemd as PID 1 in its namespace |

@@ -14,6 +14,7 @@ import dev.asl.settings.DISTRO_PROFILE_SOURCE
 import dev.asl.settings.distroProfile
 import dev.asl.settings.appearanceOf
 import dev.asl.settings.launchProfile
+import dev.asl.ui.gui.GuiActivity
 import dev.asl.ui.terminal.TerminalSurface
 import dev.asl.ui.terminal.TerminalTab
 import kotlinx.coroutines.CancellationException
@@ -79,6 +80,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun openTab(profile: Profile) {
+        // A gui profile is a window, not a tab: WSLg apps open their own windows over the terminal.
+        if (profile.gui) {
+            val app = getApplication<Application>()
+            app.startActivity(Intent(app, GuiActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                putExtra(GuiActivity.EXTRA_DISTRO, profile.distroId)
+                putExtra(GuiActivity.EXTRA_NAME, profile.name)
+            })
+            return
+        }
         val distros = Asl.distros.distros.value
         val distroId = if (profile.distroId != null) {
             distros.firstOrNull { it.id == profile.distroId }?.id
