@@ -34,6 +34,7 @@ Agent may push events at any time: `{"event":"...", ...}` (no `id`).
 | `configure` | `distros:[{id,name,device,defaultUser,systemd,hostname}]`, `androidMount:"/mnt/android"\|null` | `{}` |
 | `start` | `distro` (id) | `{"pid":123}` |
 | `terminate` | `distro` | `{}` |
+| `setDefaultUser` | `distro`, `user` | `{}`; the user must exist in the distro's `/etc/passwd`. Rewrites `/etc/wsl.conf` `[user] default` and keeps every other line. |
 | `list` | | `[{"id","state":"running\|stopped","pid"}]` |
 | `shutdown` | | `{}` then the VM powers off |
 

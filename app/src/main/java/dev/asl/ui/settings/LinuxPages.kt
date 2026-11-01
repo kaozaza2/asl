@@ -131,7 +131,7 @@ class DistrosFragment : Fragment(R.layout.settings_list) {
                         R.id.set_user -> inputDialog(
                             getString(R.string.settings_default_user_title, distro.name), getString(R.string.settings_unix_user),
                             distro.defaultUser, getString(R.string.settings_save),
-                        ) { user -> vm.launch { Asl.distros.update(distro.id) { it.copy(defaultUser = user) } } }
+                        ) { user -> vm.launch { Asl.vm.setDefaultUser(distro.id, user.trim()) } }
                         R.id.open_files -> {
                             val root = DocumentsContract.buildRootUri(DOCUMENTS_AUTHORITY, distro.id)
                             val opened = listOf(

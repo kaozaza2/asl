@@ -124,6 +124,13 @@ class AvfVmController(context: Context) : VmController {
         control?.request("terminate", buildJsonObject { put("distro", distroId) })
     }
 
+    override suspend fun setDefaultUser(distroId: String, user: String) {
+        ensureRunning()
+        val channel = control ?: throw IOException("The virtual machine is not running")
+        channel.request("setDefaultUser", buildJsonObject { put("distro", distroId); put("user", user) })
+        Asl.distros.update(distroId) { it.copy(defaultUser = user) }
+    }
+
     override suspend fun openSession(request: SessionRequest): TerminalSession {
         ensureRunning()
         val distros = Asl.distros.distros.value

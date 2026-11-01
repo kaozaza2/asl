@@ -50,6 +50,8 @@ interface VmController {
     suspend fun shutdown()
     suspend fun restart()
     suspend fun terminate(distroId: String)
+    /** Writes the distro's /etc/wsl.conf [user] default, which decides the login user, and records it. */
+    suspend fun setDefaultUser(distroId: String, user: String)
     suspend fun openSession(request: SessionRequest): TerminalSession
     suspend fun openChannel(header: JsonObject): AgentConnection
 }

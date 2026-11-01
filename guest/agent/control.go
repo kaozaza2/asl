@@ -48,6 +48,7 @@ type request struct {
 	ID           json.RawMessage `json:"id"`
 	Op           string          `json:"op"`
 	Distro       string          `json:"distro"`
+	User         string          `json:"user"`
 	Distros      []distroConfig  `json:"distros"`
 	AndroidMount *string         `json:"androidMount"`
 }
@@ -99,6 +100,8 @@ func (a *agent) do(req request) (any, error) {
 		}
 		pid, err := a.start(d)
 		return obj{"pid": pid}, err
+	case "setDefaultUser":
+		return obj{}, a.setDefaultUser(req.Distro, req.User)
 	case "terminate":
 		d, err := a.get(req.Distro, "")
 		if err != nil {
