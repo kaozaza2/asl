@@ -1,0 +1,14 @@
+ASL — Android Subsystem for Linux
+Copyright 2026 The ASL contributors
+
+This product includes software developed by the Termux project
+(https://github.com/termux/termux-app): the terminal-emulator and
+terminal-view modules, licensed under the Apache License 2.0, which are
+derived from Jack Palevich's Android-Terminal-Emulator. ASL modifies
+TerminalSession to run over a VM connection instead of a local pty and
+makes TerminalView subclassable.
+
+At build time the guest image includes third-party software, each under its
+own license: the Linux kernel (GPL-2.0), BusyBox (GPL-2.0), e2fsprogs, tar,
+xz, zstd and gzip from Alpine Linux, plus the Go modules golang.org/x/sys and
+github.com/creack/pty (BSD-3-Clause / MIT).

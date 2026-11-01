@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="ic_launcher_background">#202020</color>
+    <color name="windows_blue">#0078D4</color>
+    <!-- Tab strip and settings background, the active tab, and settings cards. -->
+    <color name="window_background">#F3F3F3</color>
+    <color name="tab_active">#FFFFFF</color>
+    <color name="card">#FBFBFB</color>
+    <color name="card_high">#E5E5E5</color>
+    <color name="text_primary">#1A1A1A</color>
+    <color name="text_secondary">#5D5D5D</color>
+    <color name="divider">#E0E0E0</color>
+    <color name="outline">#8A8A8A</color>
+    <color name="error">#C42B1C</color>
+</resources>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/open"
+        android:title="@string/settings_open_tab" />
+    <item
+        android:id="@+id/set_default"
+        android:title="@string/settings_set_default" />
+    <item
+        android:id="@+id/terminate"
+        android:title="@string/settings_terminate" />
+    <item
+        android:id="@+id/set_user"
+        android:title="@string/settings_set_default_user" />
+    <item
+        android:id="@+id/open_files"
+        android:title="@string/settings_open_files" />
+    <item
+        android:id="@+id/export"
+        android:title="@string/settings_export" />
+    <item
+        android:id="@+id/unregister"
+        android:title="@string/settings_unregister" />
+</menu>

@@ -1,0 +1,10 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.DS_Store
+/guest/out/
+/app/src/main/assets/vm/Image
+/app/src/main/assets/vm/initrd.img
+.kotlin/

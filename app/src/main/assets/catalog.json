@@ -1,0 +1,42 @@
+[
+  {
+    "id": "ubuntu-24.04",
+    "friendlyName": "Ubuntu 24.04 LTS",
+    "url": "https://cdimage.ubuntu.com/ubuntu-base/releases/24.04/release/ubuntu-base-24.04.5-base-arm64.tar.gz",
+    "sha256": "a91d5a93010193712d346d761372b7c9db6dfcf093893161c64ca107f05914f2",
+    "compression": "gz",
+    "icon": "ubuntu"
+  },
+  {
+    "id": "debian-13",
+    "friendlyName": "Debian 13 (trixie)",
+    "url": "https://raw.githubusercontent.com/debuerreotype/docker-debian-artifacts/dist-arm64v8/trixie/oci/blobs/rootfs.tar.gz",
+    "sha256": null,
+    "compression": "gz",
+    "icon": "debian"
+  },
+  {
+    "id": "alpine-3.24",
+    "friendlyName": "Alpine Linux 3.24",
+    "url": "https://dl-cdn.alpinelinux.org/alpine/v3.24/releases/aarch64/alpine-minirootfs-3.24.3-aarch64.tar.gz",
+    "sha256": "4d3f80afaebd447c5591a63a73bde380a149fe8b2d85488cafabb2ff97551f50",
+    "compression": "gz",
+    "icon": "alpine"
+  },
+  {
+    "id": "archlinuxarm",
+    "friendlyName": "Arch Linux ARM",
+    "url": "https://fl.us.mirror.archlinuxarm.org/os/ArchLinuxARM-aarch64-latest.tar.gz",
+    "sha256": null,
+    "compression": "gz",
+    "icon": "arch"
+  },
+  {
+    "id": "fedora-44",
+    "friendlyName": "Fedora 44",
+    "url": "https://dl.fedoraproject.org/pub/fedora/linux/releases/44/Container/aarch64/images/Fedora-WSL-Base-44-1.7.aarch64.wsl",
+    "sha256": "1a3220262dc918b07d08410278205fb35e92c28a53455382028eea1a980476ee",
+    "compression": "gz",
+    "icon": "fedora"
+  }
+]

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <SwitchPreferenceCompat
+        app:key="localhostForwarding"
+        app:title="@string/settings_localhost_forwarding"
+        app:summary="@string/settings_localhost_forwarding_summary"
+        app:iconSpaceReserved="false" />
+
+    <SwitchPreferenceCompat
+        app:key="bindAllInterfaces"
+        app:title="@string/settings_bind_all"
+        app:summary="@string/settings_bind_all_summary"
+        app:iconSpaceReserved="false"
+        app:dependency="localhostForwarding" />
+
+    <PreferenceCategory
+        app:key="ports"
+        app:title="@string/settings_forwarded_ports"
+        app:iconSpaceReserved="false" />
+</PreferenceScreen>

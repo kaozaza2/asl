@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        app:key="general"
+        app:title="@string/settings_general"
+        app:iconSpaceReserved="false">
+
+        <EditTextPreference
+            app:key="name"
+            app:title="@string/settings_name"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            app:key="icon"
+            app:title="@string/settings_icon"
+            app:summary="@string/settings_icon_summary"
+            app:iconSpaceReserved="false" />
+
+        <ListPreference
+            app:key="distroId"
+            app:title="@string/settings_distribution"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            app:key="commandline"
+            app:title="@string/settings_commandline"
+            app:summary="@string/settings_commandline_summary"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            app:key="startingDirectory"
+            app:title="@string/settings_starting_directory"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            app:key="user"
+            app:title="@string/settings_user"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            app:key="tabTitle"
+            app:title="@string/settings_tab_title"
+            app:summary="@string/settings_tab_title_summary"
+            app:iconSpaceReserved="false" />
+
+        <SwitchPreferenceCompat
+            app:key="hidden"
+            app:title="@string/settings_hidden"
+            app:iconSpaceReserved="false" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:key="appearanceOverride"
+        app:title="@string/settings_appearance"
+        app:iconSpaceReserved="false">
+
+        <SwitchPreferenceCompat
+            app:key="overrideAppearance"
+            app:title="@string/settings_override_appearance"
+            app:summary="@string/settings_override_appearance_summary"
+            app:iconSpaceReserved="false" />
+    </PreferenceCategory>
+</PreferenceScreen>

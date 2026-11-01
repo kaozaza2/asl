@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="settings_theme_entries">
+        <item>Dark</item>
+        <item>Light</item>
+        <item>Use system setting</item>
+    </string-array>
+    <string-array name="settings_theme_values" translatable="false">
+        <item>dark</item>
+        <item>light</item>
+        <item>system</item>
+    </string-array>
+    <string-array name="settings_launch_mode_entries">
+        <item>Default</item>
+        <item>Full screen</item>
+    </string-array>
+    <string-array name="settings_launch_mode_values" translatable="false">
+        <item>default</item>
+        <item>fullscreen</item>
+    </string-array>
+    <string-array name="settings_cursor_shape_entries">
+        <item>Bar ( ┃ )</item>
+        <item>Vintage ( ▃ )</item>
+        <item>Underscore ( ▁ )</item>
+        <item>Double underscore ( ‗ )</item>
+        <item>Filled box ( █ )</item>
+        <item>Empty box ( ▯ )</item>
+    </string-array>
+    <string-array name="settings_cursor_shape_values" translatable="false">
+        <item>bar</item>
+        <item>vintage</item>
+        <item>underscore</item>
+        <item>doubleUnderscore</item>
+        <item>filledBox</item>
+        <item>emptyBox</item>
+    </string-array>
+    <string-array name="settings_bell_style_entries">
+        <item>Audible</item>
+        <item>Visual (vibrate)</item>
+        <item>Audible and visual</item>
+        <item>None</item>
+    </string-array>
+    <string-array name="settings_bell_style_values" translatable="false">
+        <item>audible</item>
+        <item>visual</item>
+        <item>all</item>
+        <item>none</item>
+    </string-array>
+    <string-array name="settings_processors_entries">
+        <item>One CPU</item>
+        <item>Match host</item>
+    </string-array>
+    <string-array name="settings_processors_values" translatable="false">
+        <item>one</item>
+        <item>host</item>
+    </string-array>
+</resources>

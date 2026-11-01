@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        app:key="text"
+        app:title="@string/settings_text"
+        app:iconSpaceReserved="false">
+
+        <ListPreference
+            app:key="colorScheme"
+            app:title="@string/settings_color_scheme"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            app:key="fontFace"
+            app:title="@string/settings_font_face"
+            app:summary="@string/settings_font_face_summary"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            app:key="fontSize"
+            app:title="@string/settings_font_size"
+            app:iconSpaceReserved="false" />
+
+        <ListPreference
+            app:key="cursorShape"
+            app:title="@string/settings_cursor_shape"
+            app:iconSpaceReserved="false"
+            app:entries="@array/settings_cursor_shape_entries"
+            app:entryValues="@array/settings_cursor_shape_values" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:key="window"
+        app:title="@string/settings_window"
+        app:iconSpaceReserved="false">
+
+        <SeekBarPreference
+            app:key="opacity"
+            app:title="@string/settings_opacity"
+            app:summary="@string/settings_opacity_summary"
+            app:iconSpaceReserved="false"
+            app:min="0"
+            android:max="100"
+            app:showSeekBarValue="true" />
+
+        <EditTextPreference
+            app:key="padding"
+            app:title="@string/settings_padding"
+            app:iconSpaceReserved="false" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        app:key="advanced"
+        app:title="@string/settings_advanced"
+        app:iconSpaceReserved="false">
+
+        <EditTextPreference
+            app:key="scrollbackLines"
+            app:title="@string/settings_history_size"
+            app:summary="@string/settings_history_size_summary"
+            app:iconSpaceReserved="false" />
+
+        <ListPreference
+            app:key="bellStyle"
+            app:title="@string/settings_bell_style"
+            app:iconSpaceReserved="false"
+            app:entries="@array/settings_bell_style_entries"
+            app:entryValues="@array/settings_bell_style_values" />
+    </PreferenceCategory>
+</PreferenceScreen>

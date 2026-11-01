@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="main_new_tab">New tab</string>
+    <string name="main_open_profile">Open a profile</string>
+    <string name="main_close_tab">Close tab</string>
+    <string name="main_settings">Settings</string>
+    <string name="main_no_distros">No Linux distributions are installed</string>
+    <string name="main_no_distros_body">Install one from the catalog or import a root filesystem tarball, like wsl --install.</string>
+    <string name="main_install_distro">Install a distribution</string>
+    <string name="main_no_tabs">No open tabs</string>
+    <string name="main_no_tabs_body">Open a profile to start a shell.</string>
+    <string name="main_open_tab">Open a new tab</string>
+</resources>
