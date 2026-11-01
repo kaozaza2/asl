@@ -59,6 +59,26 @@ class TerminalSurface(
     private var fontSize = 12f
     private var applied: Pair<ProfileAppearance, ColorScheme>? = null
 
+    // Samsung Keyboard maps physical keys to Thai only inside text fields, so the terminal applies Android's own
+    // Kedmanee layout (assets/keyboard, from AOSP InputDevices) while the current input language is Thai.
+    private val thaiKeys: Map<Int, Pair<Int, Int>> by lazy {
+        val value = Regex("""'(\\u[0-9a-fA-F]{4}|\\.|.)'""")
+        val decode = { v: String -> if (v.startsWith("\\u")) v.substring(2).toInt(16) else v.last().code }
+        val keys = mutableMapOf<Int, Pair<Int, Int>>()
+        var key = KeyEvent.KEYCODE_UNKNOWN
+        var base = 0
+        context.assets.open("keyboard/thai_kedmanee.kcm").bufferedReader().forEachLine { raw ->
+            val line = raw.trim()
+            val v = value.find(line)?.groupValues?.get(1)?.let(decode)
+            when {
+                line.startsWith("key ") -> key = KeyEvent.keyCodeFromString("KEYCODE_" + line.split(' ')[1])
+                line.startsWith("base:") && v != null -> base = v
+                line.startsWith("shift") && v != null && key != KeyEvent.KEYCODE_UNKNOWN -> keys[key] = base to v
+            }
+        }
+        keys
+    }
+
     init {
         isFocusable = true
         isFocusableInTouchMode = true
@@ -144,8 +164,16 @@ class TerminalSurface(
     }
 
     override fun onKeyDown(keyCode: Int, e: KeyEvent, session: TerminalSession): Boolean {
-        if (session.isRunning || keyCode != KeyEvent.KEYCODE_ENTER) return false
-        onExitedEnter()
+        if (!session.isRunning) {
+            if (keyCode != KeyEvent.KEYCODE_ENTER) return false
+            onExitedEnter()
+            return true
+        }
+        val physical = e.flags and KeyEvent.FLAG_SOFT_KEYBOARD == 0 && !e.isCtrlPressed && !e.isAltPressed && !e.isMetaPressed
+        val subtype = context.getSystemService(InputMethodManager::class.java).currentInputMethodSubtype
+        if (!physical || subtype?.languageTag?.ifEmpty { subtype.locale }?.startsWith("th") != true) return false
+        val (base, shifted) = thaiKeys[keyCode] ?: return false
+        session.writeCodePoint(false, if (e.isShiftPressed || e.isCapsLockOn) shifted else base)
         return true
     }
 
