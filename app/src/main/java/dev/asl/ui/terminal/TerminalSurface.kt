@@ -132,11 +132,13 @@ class TerminalSurface(
             s.black, s.red, s.green, s.yellow, s.blue, s.purple, s.cyan, s.white,
             s.brightBlack, s.brightRed, s.brightGreen, s.brightYellow, s.brightBlue, s.brightPurple, s.brightCyan, s.brightWhite,
         )
-        val colors = emulator.mColors.mCurrentColors
-        ansi.forEachIndexed { i, c -> colors[i] = Color.parseColor(c) }
-        colors[TextStyle.COLOR_INDEX_FOREGROUND] = Color.parseColor(s.foreground)
-        colors[TextStyle.COLOR_INDEX_BACKGROUND] = Color.parseColor(s.background)
-        colors[TextStyle.COLOR_INDEX_CURSOR] = Color.parseColor(s.cursorColor)
+        val colors = emulator.mColors
+        // Register the scheme as the instance defaults as well, so terminal resets (RIS/"reset", OSC 104
+        // and OSC 110-112) restore the configured scheme instead of the builtin theme's default colors.
+        ansi.forEachIndexed { i, c -> colors.setDefaultColor(i, Color.parseColor(c)) }
+        colors.setDefaultColor(TextStyle.COLOR_INDEX_FOREGROUND, Color.parseColor(s.foreground))
+        colors.setDefaultColor(TextStyle.COLOR_INDEX_BACKGROUND, Color.parseColor(s.background))
+        colors.setDefaultColor(TextStyle.COLOR_INDEX_CURSOR, Color.parseColor(s.cursorColor))
         emulator.setCursorStyle()
         invalidate()
     }

@@ -14,19 +14,37 @@ public final class TerminalColors {
      */
     public final int[] mCurrentColors = new int[TextStyle.NUM_INDEXED_COLORS];
 
-    /** Create a new instance with default colors from the theme. */
+    /**
+     * The default colors of this instance, which are normally set from the application's color scheme, and restored
+     * when colors are reset, e.g. with a full reset (RIS/"ESC c") or the OSC 104 and OSC 110-112 control sequences. If
+     * the application does not set a color scheme, they are the colors of the built-in theme.
+     */
+    public final int[] mDefaultColors = new int[TextStyle.NUM_INDEXED_COLORS];
+
+    /** Create a new instance with default colors from the builtin theme. */
     public TerminalColors() {
+        System.arraycopy(COLOR_SCHEME.mDefaultColors, 0, mDefaultColors, 0, TextStyle.NUM_INDEXED_COLORS);
         reset();
     }
 
-    /** Reset a particular indexed color with the default color from the color theme. */
-    public void reset(int index) {
-        mCurrentColors[index] = COLOR_SCHEME.mDefaultColors[index];
+    /**
+     * Set the default color for a color index from the application's color scheme and apply it immediately, so that
+     * later resets (OSC 104, OSC 110-112, RIS) restore the application's scheme and not the builtin theme.
+     */
+    public void setDefaultColor(int index, int color) {
+        if (index < 0 || index >= TextStyle.NUM_INDEXED_COLORS) return;
+        mDefaultColors[index] = color;
+        mCurrentColors[index] = color;
     }
 
-    /** Reset all indexed colors with the default color from the color theme. */
+    /** Reset a particular indexed color with the default color from the color scheme. */
+    public void reset(int index) {
+        mCurrentColors[index] = mDefaultColors[index];
+    }
+
+    /** Reset all indexed colors with the default color from the color scheme. */
     public void reset() {
-        System.arraycopy(COLOR_SCHEME.mDefaultColors, 0, mCurrentColors, 0, TextStyle.NUM_INDEXED_COLORS);
+        System.arraycopy(mDefaultColors, 0, mCurrentColors, 0, TextStyle.NUM_INDEXED_COLORS);
     }
 
     /**
