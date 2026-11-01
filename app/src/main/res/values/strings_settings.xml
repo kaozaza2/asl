@@ -20,7 +20,7 @@
     <string name="settings_color_scheme">Color scheme</string>
     <string name="settings_colors">Colors</string>
     <string name="settings_commandline">Command line</string>
-    <string name="settings_commandline_summary">Runs through the user\'s shell, like wsl -- &lt;command&gt;. Leave empty for a login shell.</string>
+    <string name="settings_commandline_summary">Runs the command through the user\'s shell. Leave empty for a login shell.</string>
     <string name="settings_console">Console</string>
     <string name="settings_console_empty">No console output yet.</string>
     <string name="settings_copied">Copied to the clipboard</string>
@@ -60,7 +60,7 @@
     <string name="settings_font_size">Font size</string>
     <string name="settings_forwarded_ports">Forwarded ports</string>
     <string name="settings_general">General</string>
-    <string name="settings_generated_profile">Generated for this distribution, like Windows Terminal\'s WSL profiles.</string>
+    <string name="settings_generated_profile">Generated automatically for this distribution. Duplicate it to configure your own copy.</string>
     <string name="settings_group_linux">Linux</string>
     <string name="settings_group_profiles">Profiles</string>
     <string name="settings_hex_format" translatable="false">#RRGGBB</string>
@@ -155,7 +155,7 @@
     <string name="settings_usb_detach">Detach</string>
     <string name="settings_usb_empty">No USB devices are connected. A USB OTG adapter may be needed.</string>
     <string name="settings_usb_not_attached">Not attached</string>
-    <string name="settings_usb_note">Attached devices are passed to Linux over USB/IP, like usbipd. Android asks for permission the first time.</string>
+    <string name="settings_usb_note">Attached devices appear in Linux over USB/IP. Android asks for permission the first time.</string>
     <string name="settings_usb_permission">Permission required</string>
     <string name="settings_usb_unknown">Unknown device</string>
     <string name="settings_user">User</string>
