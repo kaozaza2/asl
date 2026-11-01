@@ -13,6 +13,16 @@ All integers in binary frames are **big-endian**.
 
 **The host can never `shutdown()` a vsock socket** — SELinux grants untrusted apps only `read write getattr getopt` on `vsock_socket` (see AVF_NOTES.md). So wherever the host must signal end-of-stream, the host→guest direction is **chunked**: `[u32 len][len bytes]` repeated, a zero-length chunk means EOF. The guest may `shutdown(SHUT_WR)` freely; the host sees an ordinary EOF. To abort, the host closes the fd.
 
+## Shared constants
+
+Both sides must stay in sync — the app side lives in `dev.asl/core/Constants.kt`; if one changes, the other must change too:
+
+| Constant | App (Kotlin) | Guest (Go) |
+|---|---|---|
+| Agent vsock port | `dev.asl.core.AGENT_VSOCK_PORT` = 5000 | `agentPort` (guest/agent/main.go) |
+| Minimum forwarded port | `dev.asl.core.MIN_FORWARDED_PORT` = 1024 | `minForwardedPort` (guest/agent/control.go) |
+| 9P msize | `NinepServer.MAX_MSIZE` = 262144+4096 (server) | `mountMsize` = 262144 (client mount option) |
+
 ## VM boot
 
 - Kernel cmdline: `console=hvc0 rdinit=/init quiet asl.port=5000 arm64.nompam asl.time=<epoch seconds>` + user `kernelCommandLine`. The agent sets the clock from `asl.time` (the guest otherwise boots at 1970).

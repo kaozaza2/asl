@@ -52,6 +52,9 @@ func mountedFS(dir, fstype string) bool {
 	return false
 }
 
+// mountMsize matches app/src/main/java/dev/asl/share/NinepServer.kt MAX_MSIZE (server side) >= this.
+const mountMsize = 262144
+
 func (a *agent) share9p(c *conn, raw []byte) error {
 	var h struct{ Tag, Mountpoint string }
 	if err := json.Unmarshal(raw, &h); err != nil {
@@ -75,7 +78,7 @@ func (a *agent) share9p(c *conn, raw []byte) error {
 	if err := c.reply(obj{"ok": true}); err != nil {
 		return err
 	}
-	opts := fmt.Sprintf("trans=fd,rfdno=%d,wfdno=%d,version=9p2000.L,msize=262144,cache=none", c.fd, c.fd)
+	opts := fmt.Sprintf("trans=fd,rfdno=%d,wfdno=%d,version=9p2000.L,msize=%d,cache=none", c.fd, c.fd, mountMsize)
 	if err := unix.Mount(h.Tag, mp, "9p", 0, opts); err != nil {
 		return fmt.Errorf("mount 9p on %s: %w", mp, err)
 	}

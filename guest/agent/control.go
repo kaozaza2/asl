@@ -160,7 +160,9 @@ func (a *agent) powerOff() {
 func (a *agent) watchPorts() {
 	var last []int
 	var lastCtl *ctlConn
-	for range time.Tick(time.Second) {
+	t := time.NewTicker(time.Second)
+	defer t.Stop()
+	for range t.C {
 		ports := listeningPorts()
 		if ctl := a.ctl.Load(); ctl != nil && (ctl != lastCtl || !slices.Equal(ports, last)) {
 			ctl.send(obj{"event": "ports", "ports": ports})
@@ -168,6 +170,9 @@ func (a *agent) watchPorts() {
 		}
 	}
 }
+
+// minForwardedPort matches dev.asl.core.MIN_FORWARDED_PORT: binding below it needs CAP_NET_BIND_SERVICE.
+const minForwardedPort = 1024
 
 func listeningPorts() []int {
 	const listen = "0A"
@@ -183,7 +188,7 @@ func listeningPorts() []int {
 				continue
 			}
 			_, hex, _ := strings.Cut(fields[1], ":")
-			if p, err := strconv.ParseUint(hex, 16, 16); err == nil && p >= 1024 {
+			if p, err := strconv.ParseUint(hex, 16, 16); err == nil && p >= minForwardedPort {
 				set[int(p)] = true
 			}
 		}

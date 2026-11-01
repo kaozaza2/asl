@@ -21,6 +21,9 @@ const (
 	bindTree = unix.MS_BIND | unix.MS_REC
 )
 
+// agentPort matches dev.asl.core.AGENT_VSOCK_PORT; the kernel cmdline is still the override knob.
+const agentPort = 5000
+
 type obj = map[string]any
 
 type mnt struct {
@@ -110,7 +113,7 @@ func main() {
 	a := &agent{distros: map[string]*distro{}}
 	a.android.Store("")
 	go a.watchPorts()
-	log.Fatal(a.serve(uint32(cmdline("asl.port", 5000))))
+	log.Fatal(a.serve(uint32(cmdline("asl.port", agentPort))))
 }
 
 func mountAll(root string, mounts []mnt) error {

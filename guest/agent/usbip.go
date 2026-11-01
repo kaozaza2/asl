@@ -79,7 +79,9 @@ func (a *agent) usbip(c *conn, raw []byte) error {
 		return err
 	}
 	// The kernel owns the data phase; our fd only has to outlive the attachment.
-	for range time.Tick(usbipPoll) {
+	t := time.NewTicker(usbipPoll)
+	defer t.Stop()
+	for range t.C {
 		if ports, err := vhciPorts(hub); err != nil || ports[port] == vdevFree {
 			return nil
 		}
