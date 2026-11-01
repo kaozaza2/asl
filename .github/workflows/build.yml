@@ -35,6 +35,8 @@ jobs:
 
   guest:
     name: Guest kernel and initramfs
+    # PRs check only the app build below; guest changes are validated by a dispatch run (or main).
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 150
     steps:
@@ -67,6 +69,7 @@ jobs:
   apk:
     name: Debug APK
     needs: guest
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -86,3 +89,20 @@ jobs:
         with:
           name: asl-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
+
+  # Fast PR gate: Kotlin, resources and signing, without waiting for the kernel build.
+  # assembleDebug packages only what is committed (assets/vm carries the kernel on main runs).
+  app:
+    name: App build check
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Assemble
+        run: ./gradlew :app:assembleDebug --console=plain
