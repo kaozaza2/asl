@@ -95,7 +95,7 @@ func (a *agent) session(c *conn, raw []byte) error {
 	}
 	if len(h.Argv) > 0 {
 		script = append(script, strings.Join(h.Argv, " "))
-	} else if len(script) > 0 {
+	} else {
 		script = append(script, `exec "$SHELL" -l`)
 	}
 
@@ -150,10 +150,9 @@ func (a *agent) session(c *conn, raw []byte) error {
 
 	// busybox nsenter lacks -a; "--" before the user passes -c to the shell, so util-linux su keeps the controlling tty.
 	run := func(user string, script []string) (int, <-chan unix.WaitStatus, error) {
-		args := []string{"-t", strconv.Itoa(holder), "-m", "-u", "-i", "-p", "-r", "-w", "--", "su", "-l", "--", user}
-		if len(script) > 0 {
-			args = append(args, "-c", strings.Join(script, "; "))
-		}
+		// Minimal rootfs tarballs set no locale; without one, shells treat UTF-8 (e.g. Thai) as raw bytes.
+		script = append([]string{`[ -n "$LANG" ] || export LANG=C.UTF-8`}, script...)
+		args := []string{"-t", strconv.Itoa(holder), "-m", "-u", "-i", "-p", "-r", "-w", "--", "su", "-l", "--", user, "-c", strings.Join(script, "; ")}
 		cmd := exec.Command("nsenter", args...)
 		cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true, Setctty: h.Tty}
 		cmd.Stdin, cmd.Stdout, cmd.Stderr = child[0], child[1], child[2]

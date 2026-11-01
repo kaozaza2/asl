@@ -49,4 +49,10 @@ val BuiltInSchemes = listOf(
         "#000000", "#800000", "#008000", "#808000", "#000080", "#800080", "#008080", "#C0C0C0",
         "#808080", "#FF0000", "#00FF00", "#FFFF00", "#0000FF", "#FF00FF", "#00FFFF", "#FFFFFF",
     ),
+    // From github.com/dracula/windows-terminal, which defines selectionBackground.
+    ColorScheme(
+        "Dracula", "#282A36", "#F8F8F2", "#F8F8F2", "#44475A",
+        "#21222C", "#FF5555", "#50FA7B", "#F1FA8C", "#BD93F9", "#FF79C6", "#8BE9FD", "#F8F8F2",
+        "#6272A4", "#FF6E6E", "#69FF94", "#FFFFA5", "#D6ACFF", "#FF92DF", "#A4FFFF", "#FFFFFF",
+    ),
 )

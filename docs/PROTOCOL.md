@@ -48,6 +48,7 @@ Header: `{"svc":"session","distro":"<id>","user":"alice","cwd":"~","argv":[],"en
 - Empty `argv` means login shell. Starts the distro if needed.
 - Runs inside the distro's namespaces: `nsenter -t <pid> -m -u -i -p -r -w -- su -l -- <user> [-c '<script>']` (busybox nsenter has no `-a`; `--` keeps `-c` away from su, which would otherwise `setsid()` and lose job control). The script exports env, `cd`s to cwd and runs argv joined with spaces, like wsl.exe.
 - First run, like WSL: when `oobe` is true and the session is an interactive login (tty, no argv, no user), the agent reads `/etc/wsl-distribution.conf`. With an `[oobe] command`, it runs that command as root on the same pty, then continues into the login shell; on exit 0 it emits the `oobe` event with the user owning `[oobe] defaultUid`, otherwise the setup runs again next time. Without one it emits `oobe` with no user and the distro stays root by default. Only one tab runs it at a time.
+- Every session's script starts with `[ -n "$LANG" ] || export LANG=C.UTF-8`, so minimal rootfs tarballs without a locale still handle UTF-8 input.
 - User precedence: header > wsl.conf `[user] default` > configure `defaultUser` > root. On a tty, EOF writes ^D.
 
 Frames after the reply, both directions: `[u8 type][u32 len][payload]`.

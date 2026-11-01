@@ -61,5 +61,8 @@ class JsonSettingsRepository(context: Context) : SettingsRepository {
     }
 
     private fun AslSettings.withBuiltInSchemes() =
-        copy(schemes = BuiltInSchemes.filter { builtIn -> schemes.none { it.name == builtIn.name } } + schemes)
+        copy(
+            schemes = BuiltInSchemes.map { builtIn -> schemes.firstOrNull { it.name == builtIn.name } ?: builtIn } +
+                schemes.filter { scheme -> BuiltInSchemes.none { it.name == scheme.name } },
+        )
 }

@@ -160,8 +160,8 @@ class TerminalSurface(
     override fun readShiftKey() = false
     override fun readFnKey() = false
     override fun shouldBackButtonBeMappedToEscape() = false
-    // Char-based input keeps IME prediction and autocorrect out of the shell.
-    override fun shouldEnforceCharBasedInput() = true
+    // Char-based input is a visible-password field, where keyboards lock to Latin layouts (no Thai).
+    override fun shouldEnforceCharBasedInput() = false
     override fun shouldUseCtrlSpaceWorkaround() = false
     override fun isTerminalViewSelected() = true
     override fun copyModeChanged(copyMode: Boolean) = Unit
