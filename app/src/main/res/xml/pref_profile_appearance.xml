@@ -12,7 +12,7 @@
             app:title="@string/settings_color_scheme"
             app:iconSpaceReserved="false" />
 
-        <EditTextPreference
+        <ListPreference
             app:key="fontFace"
             app:title="@string/settings_font_face"
             app:summary="@string/settings_font_face_summary"

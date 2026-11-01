@@ -55,7 +55,8 @@
     <string name="settings_duplicate">Duplicate</string>
     <string name="settings_export">Export</string>
     <string name="settings_font_face">Font face</string>
-    <string name="settings_font_face_summary">Falls back to the system monospace font when it isn\'t installed.</string>
+    <string name="settings_font_face_summary">Bundled Nerd Fonts include Powerline and icon glyphs for prompts like Starship.</string>
+    <string name="settings_font_choose">Choose a font file…</string>
     <string name="settings_font_size">Font size</string>
     <string name="settings_forwarded_ports">Forwarded ports</string>
     <string name="settings_general">General</string>

@@ -23,7 +23,7 @@ data class Profiles(
 @Serializable
 data class ProfileAppearance(
     val colorScheme: String = "Campbell",
-    val fontFace: String = "Cascadia Mono",
+    val fontFace: String = "CaskaydiaMono Nerd Font Mono",
     val fontSize: Int = 12,
     val cursorShape: String = "bar",
     val opacity: Int = 100,

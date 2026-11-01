@@ -5,7 +5,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Color
-import android.graphics.Typeface
 import android.util.Log
 import android.util.TypedValue
 import android.view.KeyEvent
@@ -94,8 +93,7 @@ class TerminalSurface(
         applied = appearance to scheme
         this.scheme = scheme
         cursorStyle = CursorStyles[appearance.cursorShape] ?: TerminalEmulator.DEFAULT_TERMINAL_CURSOR_STYLE
-        val face = Typeface.create(appearance.fontFace, Typeface.NORMAL)
-        setTypeface(if (face == Typeface.DEFAULT) Typeface.MONOSPACE else face)
+        setTypeface(context.typeface(appearance.fontFace))
         fontSize = appearance.fontSize.toFloat()
         setTextSize(px(fontSize))
         applyColors()

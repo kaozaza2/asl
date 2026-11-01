@@ -10,6 +10,7 @@ import android.os.Environment
 import android.provider.Settings
 import android.view.View
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.isVisible
 import androidx.preference.ListPreference
 import androidx.preference.Preference
@@ -28,8 +29,13 @@ import dev.asl.databinding.SettingsPrefVmStatusBinding
 import dev.asl.settings.DISTRO_PROFILE_SOURCE
 import dev.asl.settings.scheme
 import dev.asl.settings.visibleProfiles
+import dev.asl.ui.terminal.BundledFontNames
 import dev.asl.ui.terminal.VmPermissions
+import dev.asl.ui.terminal.importFont
+import dev.asl.ui.terminal.importedFonts
 import java.util.UUID
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class StartupFragment : StorePreferenceFragment() {
     override val xml = intArrayOf(R.xml.pref_startup)
@@ -57,6 +63,14 @@ class AppearanceFragment : StorePreferenceFragment() {
 class ProfileFragment : StorePreferenceFragment() {
     private val guid by lazy { requireArguments().getString(ARG).orEmpty() }
     private var missing = false
+    private val pickFont = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        val app = context?.applicationContext ?: return@registerForActivityResult
+        uri ?: return@registerForActivityResult
+        vm.launch {
+            val name = withContext(Dispatchers.IO) { app.importFont(uri) }
+            Asl.settings.update { table.getValue("fontFace").set(it, name) }
+        }
+    }
     private val preview by lazy {
         ViewPreference(requireContext(), R.layout.settings_pref_swatch) { view ->
             val s = Asl.settings.settings.value
@@ -128,6 +142,11 @@ class ProfileFragment : StorePreferenceFragment() {
     }
 
     override fun onPreferencesCreated() {
+        findPreference<ListPreference>("fontFace")?.setOnPreferenceChangeListener { _, value ->
+            (value != CHOOSE_FONT).also { keep ->
+                if (!keep) pickFont.launch(arrayOf("font/*", "application/x-font-ttf", "application/x-font-otf", "application/octet-stream"))
+            }
+        }
         findPreference<PreferenceCategory>("text")?.addPreference(preview.apply { order = -1 })
         if (guid.isEmpty()) {
             preferenceScreen.addPreference(
@@ -147,6 +166,12 @@ class ProfileFragment : StorePreferenceFragment() {
         findPreference<ListPreference>("colorScheme")?.apply {
             entries = s.schemes.map { it.name }.toTypedArray()
             entryValues = entries
+        }
+        findPreference<ListPreference>("fontFace")?.apply {
+            val current = table.getValue("fontFace").get(s) as String
+            val fonts = (BundledFontNames + requireContext().importedFonts().keys).let { if (current in it) it else it + current }
+            entries = (fonts + getString(R.string.settings_font_choose)).toTypedArray()
+            entryValues = (fonts + CHOOSE_FONT).toTypedArray()
         }
         preview.refresh()
         if (guid.isEmpty() || missing) return
@@ -285,3 +310,5 @@ class VmFragment : StorePreferenceFragment() {
             getString(if (Environment.isExternalStorageManager()) R.string.settings_all_files_granted else R.string.settings_all_files_needed)
     }
 }
+
+private const val CHOOSE_FONT = "asl:choose-font"
