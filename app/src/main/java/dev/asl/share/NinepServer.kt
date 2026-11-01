@@ -262,6 +262,7 @@ class NinepServer(root: String, private val conn: AgentConnection) {
     }
 
     private companion object {
+        // Must stay >= the guest's mount option msize=262144 (guest/agent/share.go); +4096 for the header.
         const val MAX_MSIZE = 262144 + 4096
         const val HEADER = 7
         const val RLERROR = 7

@@ -2,9 +2,8 @@ package dev.asl.ui.terminal
 
 import android.content.Context
 import android.content.pm.PackageManager
-import android.util.Log
 import com.termux.terminal.TerminalSession
-import com.termux.terminal.TerminalSessionClient
+import dev.asl.R
 import dev.asl.core.Asl
 import dev.asl.core.Profile
 import dev.asl.core.SessionRequest
@@ -26,7 +25,7 @@ val VmPermissions = listOf("android.permission.MANAGE_VIRTUAL_MACHINE", "android
 enum class TabState { Starting, Running, Exited }
 
 /** One terminal tab: a Termux emulator fed by an agent session in the VM. */
-class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : TerminalSessionClient {
+class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSessionClient {
     private val _title = MutableStateFlow(profile.tabTitle ?: profile.name)
     val title: StateFlow<String> = _title.asStateFlow()
     private val _state = MutableStateFlow(TabState.Starting)
@@ -53,13 +52,13 @@ class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : Termina
             val missing = VmPermissions.filter { context.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
             if (missing.isNotEmpty()) {
                 return@launch end(
-                    "\u001b[91mASL needs permission to run virtual machines.\u001b[0m\r\nFrom a computer with adb, run:\r\n\r\n" +
+                    "\u001b[91m${context.getString(R.string.main_vm_permission)}\u001b[0m\r\n${context.getString(R.string.main_vm_adb_command)}\r\n\r\n" +
                         missing.joinToString("") { "  adb shell pm grant ${context.packageName} $it\r\n" },
                 )
             }
-            if (request.distroId == null) return@launch end("\u001b[91mThere is no distribution with the supplied name.\u001b[0m")
+            if (request.distroId == null) return@launch end("\u001b[91m${context.getString(R.string.main_no_distro_name)}\u001b[0m")
             val booting = Asl.vm.status.value.state != VmState.Running
-            if (booting) print("Starting ASL virtual machine…")
+            if (booting) print(context.getString(R.string.main_vm_starting))
             try {
                 Asl.vm.ensureRunning()
                 val (cols, rows) = size.filterNotNull().first()
@@ -112,13 +111,6 @@ class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : Termina
 
     override fun onTerminalCursorStateChange(state: Boolean) = Unit
     override fun setTerminalShellPid(session: TerminalSession, pid: Int) = Unit
-    override fun logError(tag: String?, message: String?) { Log.e(tag, message.orEmpty()) }
-    override fun logWarn(tag: String?, message: String?) { Log.w(tag, message.orEmpty()) }
-    override fun logInfo(tag: String?, message: String?) = Unit
-    override fun logDebug(tag: String?, message: String?) = Unit
-    override fun logVerbose(tag: String?, message: String?) = Unit
-    override fun logStackTraceWithMessage(tag: String?, message: String?, e: Exception?) { Log.e(tag, message, e) }
-    override fun logStackTrace(tag: String?, e: Exception?) { Log.e(tag, "", e) }
 
     fun close() {
         job?.cancel()

@@ -10,9 +10,13 @@ import android.hardware.usb.UsbDeviceConnection
 import android.hardware.usb.UsbManager
 import android.util.Log
 import dev.asl.core.Asl
+import dev.asl.core.USB_SPEED_FULL
+import dev.asl.core.USB_SPEED_HIGH
+import dev.asl.core.USB_SPEED_SUPER
 import dev.asl.core.UsbDeviceInfo
 import dev.asl.core.UsbPassthrough
 import dev.asl.core.VmState
+import dev.asl.core.openAgentChannel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -25,10 +29,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -115,27 +116,22 @@ class UsbIpPassthrough(context: Context) : UsbPassthrough {
                     connection = manager.openDevice(device) ?: error("Cannot open ${device.deviceName}")
                     val (bus, address) = device.busAndAddress
                     val bcdUsb = ByteBuffer.wrap(connection.rawDescriptors).order(ByteOrder.LITTLE_ENDIAN).getShort(2).toInt() and 0xffff
-                    val maxPacket = (0 until device.configurationCount).map(device::getConfiguration)
+                    val maxPacket = device.configurations
                         .flatMap { c -> (0 until c.interfaceCount).map(c::getInterface) }
                         .flatMap { i -> (0 until i.endpointCount).map { i.getEndpoint(it).maxPacketSize } }
                         .maxOrNull() ?: 0
                     // Linux usb_device_speed. Full-speed devices often claim bcdUSB 2.0, so high speed also needs a >64-byte endpoint; low speed is undetectable and reported as full.
                     val speed = when {
-                        bcdUsb >= 0x0300 -> 5
-                        bcdUsb >= 0x0200 && maxPacket > 64 -> 3
-                        else -> 2
+                        bcdUsb >= 0x0300 -> USB_SPEED_SUPER
+                        bcdUsb >= 0x0200 && maxPacket > 64 -> USB_SPEED_HIGH
+                        else -> USB_SPEED_FULL
                     }
-                    Asl.vm.ensureRunning()
-                    val channel = Asl.vm.openChannel(buildJsonObject {
+                    val channel = Asl.vm.openAgentChannel(buildJsonObject {
                         put("svc", "usbip")
                         put("busid", "$bus-$address")
                         put("devid", (bus shl 16) or address)
                         put("speed", speed)
                     })
-                    if (channel.reply["ok"]?.jsonPrimitive?.booleanOrNull != true) {
-                        channel.close()
-                        error(channel.reply["error"]?.jsonPrimitive?.contentOrNull ?: "Guest refused USB/IP attach")
-                    }
                     val server = UsbIpServer(device, connection, channel)
                     servers[key] = server
                     thread(name = "usbip-$bus-$address") {

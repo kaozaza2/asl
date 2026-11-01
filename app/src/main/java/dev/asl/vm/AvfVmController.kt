@@ -14,6 +14,8 @@ import dev.asl.core.TerminalSession
 import dev.asl.core.VmController
 import dev.asl.core.VmState
 import dev.asl.core.VmStatus
+import dev.asl.core.distroDevice
+import dev.asl.core.requireOk
 import dev.asl.net.PortForwarder
 import dev.asl.share.NinepServer
 import kotlinx.coroutines.CancellationException
@@ -236,7 +238,7 @@ class AvfVmController(context: Context) : VmController {
                         addJsonObject {
                             put("id", d.id)
                             put("name", d.name)
-                            put("device", "/dev/vd${'a' + i}")
+                            put("device", distroDevice(i))
                             put("defaultUser", d.defaultUser)
                             put("systemd", d.systemd)
                             put("hostname", d.hostname)

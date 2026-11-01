@@ -27,6 +27,7 @@ import dev.asl.databinding.SettingsPrefConsoleBinding
 import dev.asl.databinding.SettingsPrefProfileActionsBinding
 import dev.asl.databinding.SettingsPrefVmStatusBinding
 import dev.asl.settings.DISTRO_PROFILE_SOURCE
+import dev.asl.settings.appearanceOf
 import dev.asl.settings.scheme
 import dev.asl.settings.visibleProfiles
 import dev.asl.ui.terminal.BundledFontNames
@@ -110,7 +111,7 @@ class ProfileFragment : StorePreferenceFragment() {
         s.copy(profiles = s.profiles.copy(list = s.profiles.list.map { if (it.guid == guid) transform(it) else it }))
 
     override fun fields(): Map<String, Field> {
-        val get = { s: AslSettings -> if (guid.isEmpty()) s.profiles.defaults else profile(s)?.appearance ?: s.profiles.defaults }
+        val get = { s: AslSettings -> profile(s)?.let { s.appearanceOf(it) } ?: s.profiles.defaults }
         // A profile that doesn't override its appearance is never written to; its editor is hidden.
         val set = { s: AslSettings, t: (ProfileAppearance) -> ProfileAppearance ->
             if (guid.isEmpty()) s.copy(profiles = s.profiles.copy(defaults = t(s.profiles.defaults))) else edit(s) { it.copy(appearance = it.appearance?.let(t)) }

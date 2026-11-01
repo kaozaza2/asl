@@ -5,7 +5,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Color
-import android.util.Log
 import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.MotionEvent
@@ -45,7 +44,7 @@ class TerminalSurface(
     private val latches: Latches,
     private val onExitedEnter: () -> Unit,
     val onBell: () -> Unit,
-) : TerminalView(context, null), TerminalViewClient {
+) : TerminalView(context, null), TerminalViewClient, LogViewClient {
 
     interface Latches {
         fun consumeCtrl(): Boolean
@@ -195,11 +194,4 @@ class TerminalSurface(
     override fun copyModeChanged(copyMode: Boolean) = Unit
     override fun onKeyUp(keyCode: Int, e: KeyEvent) = false
     override fun onLongPress(event: MotionEvent) = false
-    override fun logError(tag: String?, message: String?) { Log.e(tag, message.orEmpty()) }
-    override fun logWarn(tag: String?, message: String?) { Log.w(tag, message.orEmpty()) }
-    override fun logInfo(tag: String?, message: String?) = Unit
-    override fun logDebug(tag: String?, message: String?) = Unit
-    override fun logVerbose(tag: String?, message: String?) = Unit
-    override fun logStackTraceWithMessage(tag: String?, message: String?, e: Exception?) { Log.e(tag, message, e) }
-    override fun logStackTrace(tag: String?, e: Exception?) { Log.e(tag, "", e) }
 }

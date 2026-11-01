@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ASL</string>
+    <string name="main_vm_permission">ASL needs permission to run virtual machines.</string>
+    <string name="main_vm_adb_command">From a computer with adb, run:</string>
+    <string name="main_vm_starting">Starting ASL virtual machine…</string>
+    <string name="main_no_distro_name">There is no distribution with the supplied name.</string>
 </resources>

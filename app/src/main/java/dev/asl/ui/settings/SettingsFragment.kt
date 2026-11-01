@@ -19,6 +19,7 @@ import dev.asl.databinding.ItemSettingsNavBinding
 import dev.asl.databinding.SettingsFragmentBinding
 import dev.asl.ui.MainViewModel
 import dev.asl.ui.SETTINGS_TAB
+import dev.asl.ui.main.glyph
 import kotlinx.coroutines.flow.combine
 import java.util.UUID
 
@@ -46,6 +47,7 @@ private enum class RowKind { Header, Divider, Item }
 private data class NavRow(val key: String, val kind: RowKind, val label: String = "", val icon: Int = 0, val glyph: String? = null, val selected: Boolean = false)
 
 private const val ADD_PROFILE = "add-profile"
+private const val WIDE_PANE_DP = 720
 
 /** Windows Terminal's settings layout: a navigation pane beside the page, or list then page on narrow screens. */
 class SettingsFragment : Fragment(R.layout.settings_fragment) {
@@ -55,7 +57,7 @@ class SettingsFragment : Fragment(R.layout.settings_fragment) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         val b = SettingsFragmentBinding.bind(view)
         val density = resources.displayMetrics.density
-        var wide = resources.configuration.screenWidthDp >= 720
+        var wide = resources.configuration.screenWidthDp >= WIDE_PANE_DP
         val nav = ItemAdapter(ItemSettingsNavBinding::inflate, NavRow::key) { row ->
             header.isVisible = row.kind == RowKind.Header
             header.text = row.label
@@ -106,8 +108,7 @@ class SettingsFragment : Fragment(R.layout.settings_fragment) {
                     ) + NavEntries.filter { it.group == group }.map {
                         NavRow(it.key, RowKind.Item, getString(it.label), it.icon, selected = page == it.key)
                     } + if (group != NavGroup.Profiles) emptyList() else settings.profiles.list.map { p ->
-                        val glyph = p.icon?.takeIf { it.isNotBlank() } ?: if (p.distroId != null) "🐧" else p.name.take(1).uppercase()
-                        NavRow("profile:${p.guid}", RowKind.Item, p.name, glyph = glyph, selected = page == "profile:${p.guid}")
+                        NavRow("profile:${p.guid}", RowKind.Item, p.name, glyph = p.glyph, selected = page == "profile:${p.guid}")
                     } + NavRow(ADD_PROFILE, RowKind.Item, getString(R.string.settings_add_profile), R.drawable.ic_settings_add)
                 },
             )
@@ -120,7 +121,7 @@ class SettingsFragment : Fragment(R.layout.settings_fragment) {
         }
 
         view.addOnLayoutChangeListener { v, _, _, _, _, _, _, _, _ ->
-            val now = v.width >= 720 * density
+            val now = v.width >= WIDE_PANE_DP * density
             if (now != wide) {
                 wide = now
                 v.post { if (this@SettingsFragment.view != null) render() }

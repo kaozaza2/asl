@@ -20,7 +20,8 @@ import android.webkit.MimeTypeMap
 import dev.asl.R
 import dev.asl.core.AgentConnection
 import dev.asl.core.Asl
-import dev.asl.distro.openAgentChannel
+import dev.asl.core.DOCUMENTS_AUTHORITY
+import dev.asl.core.openAgentChannel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -51,40 +52,57 @@ class DistroDocumentsProvider : DocumentsProvider() {
         Handler(Looper.getMainLooper()).post {
             scope.launch {
                 combine(Asl.distros.distros, Asl.vm.runningDistros) { _, _ -> }.collect {
-                    requireContext().contentResolver.notifyChange(DocumentsContract.buildRootsUri(AUTHORITY), null)
+                    requireContext().contentResolver.notifyChange(DocumentsContract.buildRootsUri(DOCUMENTS_AUTHORITY), null)
                 }
             }
         }
         return true
     }
 
+    /** "distroId:/path" document ids; every provider method starts by splitting one. */
+    private data class DocumentId(val distroId: String, val path: String) {
+        override fun toString() = "$distroId:$path"
+        companion object {
+            fun parse(encoded: String) = DocumentId(encoded.substringBefore(':'), encoded.substringAfter(':'))
+        }
+    }
+
     private fun connect(header: JsonObject): AgentConnection = try {
-        runBlocking(Dispatchers.IO) { withTimeout(TIMEOUT_MS) { openAgentChannel(header) } }
+        runBlocking(Dispatchers.IO) { withTimeout(CONNECT_TIMEOUT_MS) { Asl.vm.openAgentChannel(header) } }
     } catch (e: Exception) {
         throw FileNotFoundException(e.message ?: e.toString()).apply { initCause(e) }
     }
 
-    private fun fs(documentId: String, op: String, to: String? = null): JsonObject = connect(buildJsonObject {
+    private fun fs(id: DocumentId, op: String, to: String? = null): JsonObject = connect(buildJsonObject {
         put("svc", "fs")
-        put("distro", documentId.substringBefore(':'))
+        put("distro", id.distroId)
         put("op", op)
-        put("path", documentId.substringAfter(':'))
+        put("path", id.path)
         if (to != null) put("to", to)
         if (op == "remove") put("recursive", true)
     }).use { it.reply }
 
-    private fun notifyChildren(documentId: String) {
-        val parent = File(documentId.substringAfter(':')).parent ?: "/"
-        requireContext().contentResolver.notifyChange(
-            DocumentsContract.buildChildDocumentsUri(AUTHORITY, "${documentId.substringBefore(':')}:$parent"), null)
+    private fun fileService(id: DocumentId, mode: String, create: Boolean = false, truncate: Boolean = false): JsonObject = buildJsonObject {
+        put("svc", "file")
+        put("distro", id.distroId)
+        put("path", id.path)
+        put("mode", mode)
+        put("create", create)
+        put("truncate", truncate)
     }
 
-    private fun addRow(cursor: MatrixCursor, documentId: String, entry: JsonObject) {
-        val path = documentId.substringAfter(':')
+    private fun notifyChildren(id: DocumentId) {
+        val parent = File(id.path).parent ?: "/"
+        requireContext().contentResolver.notifyChange(
+            DocumentsContract.buildChildDocumentsUri(DOCUMENTS_AUTHORITY, DocumentId(id.distroId, parent).toString()), null)
+    }
+
+    private fun addRow(cursor: MatrixCursor, id: DocumentId, entry: JsonObject) {
+        val path = id.path
         val isDir = entry["type"]?.jsonPrimitive?.contentOrNull == "dir"
         val name = File(path).name
         cursor.newRow().apply {
-            add(Document.COLUMN_DOCUMENT_ID, documentId)
+            add(Document.COLUMN_DOCUMENT_ID, id.toString())
             add(Document.COLUMN_DISPLAY_NAME, name)
             add(Document.COLUMN_MIME_TYPE,
                 if (isDir) Document.MIME_TYPE_DIR
@@ -105,53 +123,49 @@ class DistroDocumentsProvider : DocumentsProvider() {
         Asl.distros.distros.value.filterNot { it.pendingImport }.forEach { distro ->
             cursor.newRow().apply {
                 add(Root.COLUMN_ROOT_ID, distro.id)
-                add(Root.COLUMN_DOCUMENT_ID, "${distro.id}:/")
+                add(Root.COLUMN_DOCUMENT_ID, DocumentId(distro.id, "/").toString())
                 add(Root.COLUMN_TITLE, "ASL: ${distro.name}")
                 add(Root.COLUMN_SUMMARY, if (distro.id in running) "Running" else "Stopped")
                 add(Root.COLUMN_FLAGS, Root.FLAG_SUPPORTS_CREATE or Root.FLAG_SUPPORTS_IS_CHILD)
                 add(Root.COLUMN_ICON, R.mipmap.ic_launcher)
             }
         }
-        cursor.setNotificationUri(requireContext().contentResolver, DocumentsContract.buildRootsUri(AUTHORITY))
+        cursor.setNotificationUri(requireContext().contentResolver, DocumentsContract.buildRootsUri(DOCUMENTS_AUTHORITY))
         return cursor
     }
 
     override fun queryDocument(documentId: String, projection: Array<out String>?): Cursor {
         val cursor = MatrixCursor(projection ?: DOCUMENT_COLUMNS)
+        val id = DocumentId.parse(documentId)
         // The root row is synthesized so browsing the roots list never boots the VM.
-        val entry = if (documentId.substringAfter(':') == "/") buildJsonObject { put("type", "dir") }
-        else fs(documentId, "stat")["entry"]?.jsonObject ?: throw FileNotFoundException(documentId)
-        addRow(cursor, documentId, entry)
+        val entry = if (id.path == "/") buildJsonObject { put("type", "dir") }
+        else fs(id, "stat")["entry"]?.jsonObject ?: throw FileNotFoundException(documentId)
+        addRow(cursor, id, entry)
         return cursor
     }
 
     override fun queryChildDocuments(parentDocumentId: String, projection: Array<out String>?, sortOrder: String?): Cursor {
         val cursor = MatrixCursor(projection ?: DOCUMENT_COLUMNS)
-        val distroId = parentDocumentId.substringBefore(':')
-        val parent = parentDocumentId.substringAfter(':')
+        val parent = DocumentId.parse(parentDocumentId)
         try {
-            fs(parentDocumentId, "list")["entries"]?.jsonArray?.forEach {
+            fs(parent, "list")["entries"]?.jsonArray?.forEach {
                 val entry = it.jsonObject
-                addRow(cursor, "$distroId:${File(parent, entry["name"]!!.jsonPrimitive.content).path}", entry)
+                addRow(cursor, DocumentId(parent.distroId, File(parent.path, entry["name"]!!.jsonPrimitive.content).path), entry)
             }
         } catch (e: Exception) {
             cursor.extras = Bundle().apply { putString(DocumentsContract.EXTRA_ERROR, e.message ?: e.toString()) }
         }
-        cursor.setNotificationUri(requireContext().contentResolver, DocumentsContract.buildChildDocumentsUri(AUTHORITY, parentDocumentId))
+        cursor.setNotificationUri(requireContext().contentResolver, DocumentsContract.buildChildDocumentsUri(DOCUMENTS_AUTHORITY, parentDocumentId))
         return cursor
     }
 
     override fun openDocument(documentId: String, mode: String, signal: CancellationSignal?): ParcelFileDescriptor {
+        val id = DocumentId.parse(documentId)
         val flags = ParcelFileDescriptor.parseMode(mode)
         val access = flags and ParcelFileDescriptor.MODE_READ_WRITE
-        val conn = connect(buildJsonObject {
-            put("svc", "file")
-            put("distro", documentId.substringBefore(':'))
-            put("path", documentId.substringAfter(':'))
-            put("mode", ACCESS_MODES.getValue(access))
-            put("create", (flags and ParcelFileDescriptor.MODE_CREATE) != 0)
-            put("truncate", (flags and ParcelFileDescriptor.MODE_TRUNCATE) != 0)
-        })
+        val conn = connect(fileService(id, ACCESS_MODES.getValue(access),
+            create = (flags and ParcelFileDescriptor.MODE_CREATE) != 0,
+            truncate = (flags and ParcelFileDescriptor.MODE_TRUNCATE) != 0))
         val thread = HandlerThread("asl-file").apply { start() }
         val callback = object : ProxyFileDescriptorCallback() {
             val out = DataOutputStream(conn.output.buffered())
@@ -188,7 +202,7 @@ class DistroDocumentsProvider : DocumentsProvider() {
             override fun onRelease() {
                 conn.close()
                 thread.quitSafely()
-                if (access != ParcelFileDescriptor.MODE_READ_ONLY) notifyChildren(documentId)
+                if (access != ParcelFileDescriptor.MODE_READ_ONLY) notifyChildren(id)
             }
         }
         return try {
@@ -205,48 +219,42 @@ class DistroDocumentsProvider : DocumentsProvider() {
         val isDir = mimeType == Document.MIME_TYPE_DIR
         val extension = MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType)
         val name = if (isDir || extension == null || displayName.endsWith(".$extension")) displayName else "$displayName.$extension"
-        val distroId = parentDocumentId.substringBefore(':')
-        val parent = parentDocumentId.substringAfter(':')
+        val parent = DocumentId.parse(parentDocumentId)
         val documentId = generateSequence(0) { it + 1 }.take(100)
             .map { i -> if (i == 0) name else "${name.substringBeforeLast('.')} ($i)${name.substring(name.substringBeforeLast('.').length)}" }
-            .map { "$distroId:${File(parent, it).path}" }
+            .map { DocumentId(parent.distroId, File(parent.path, it).path) }
             .firstOrNull { runCatching { fs(it, "stat") }.isFailure }
-            ?: throw FileNotFoundException("No free name for $displayName in $parent")
+            ?: throw FileNotFoundException("No free name for $displayName in ${parent.path}")
         if (isDir) fs(documentId, "mkdir")
-        else connect(buildJsonObject {
-            put("svc", "file")
-            put("distro", distroId)
-            put("path", documentId.substringAfter(':'))
-            put("mode", "w")
-            put("create", true)
-            put("truncate", false)
-        }).close()
+        else connect(fileService(documentId, "w", create = true)).close()
         notifyChildren(documentId)
-        return documentId
+        return documentId.toString()
     }
 
     override fun deleteDocument(documentId: String) {
-        fs(documentId, "remove")
-        notifyChildren(documentId)
+        val id = DocumentId.parse(documentId)
+        fs(id, "remove")
+        notifyChildren(id)
     }
 
     override fun renameDocument(documentId: String, displayName: String): String {
-        val path = documentId.substringAfter(':')
-        val to = File(File(path).parent ?: "/", displayName).path
-        fs(documentId, "rename", to)
-        notifyChildren(documentId)
-        return "${documentId.substringBefore(':')}:$to"
+        val id = DocumentId.parse(documentId)
+        val to = File(File(id.path).parent ?: "/", displayName).path
+        fs(id, "rename", to)
+        notifyChildren(id)
+        return DocumentId(id.distroId, to).toString()
     }
 
     override fun isChildDocument(parentDocumentId: String, documentId: String): Boolean {
-        val parent = parentDocumentId.substringAfter(':').trimEnd('/')
-        return parentDocumentId.substringBefore(':') == documentId.substringBefore(':') &&
-            documentId.substringAfter(':').startsWith("$parent/")
+        val parent = DocumentId.parse(parentDocumentId)
+        val id = DocumentId.parse(documentId)
+        val trimmed = parent.path.trimEnd('/')
+        return parent.distroId == id.distroId && id.path.startsWith("$trimmed/")
     }
 
     private companion object {
-        const val AUTHORITY = "dev.asl.documents"
-        const val TIMEOUT_MS = 60_000L
+        // Matches AvfVmController.AGENT_TIMEOUT_MS: file access may be requested while the VM is still booting.
+        const val CONNECT_TIMEOUT_MS = 90_000L
         const val OP_READ = 0
         const val OP_WRITE = 1
         const val OP_SIZE = 2

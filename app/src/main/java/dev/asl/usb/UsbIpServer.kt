@@ -30,6 +30,11 @@ import kotlin.concurrent.thread
 private const val ESHUTDOWN = 108
 
 
+/** The device's configurations, in declaration order. */
+internal val UsbDevice.configurations: List<UsbConfiguration>
+    get() = (0 until configurationCount).map(::getConfiguration)
+
+
 class UsbIpServer(
     private val device: UsbDevice,
     private val connection: UsbDeviceConnection,
@@ -45,7 +50,7 @@ class UsbIpServer(
     private val queued = AtomicInteger()
     private val closed = AtomicBoolean()
     private val control = Executors.newSingleThreadExecutor { Thread(it, "usbip-control") }
-    private val configurations = (0 until device.configurationCount).map(device::getConfiguration)
+    private val configurations = device.configurations
     private var alternates = emptyList<UsbInterface>()
     private var isoLogged = false
 

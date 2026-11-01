@@ -4,13 +4,17 @@ import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
 import android.util.AtomicFile
-import dev.asl.core.AgentConnection
 import dev.asl.core.Asl
 import dev.asl.core.CatalogEntry
 import dev.asl.core.Distro
+import dev.asl.core.DISTRO_NAME
 import dev.asl.core.DistroManager
 import dev.asl.core.Progress
 import dev.asl.core.VmState
+import dev.asl.core.distroDevice
+import dev.asl.core.openAgentChannel
+import dev.asl.core.requireOk
+import dev.asl.settings.SettingsJson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -20,13 +24,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.io.BufferedInputStream
 import java.io.File
@@ -42,31 +41,12 @@ import java.security.MessageDigest
 import java.util.UUID
 import java.util.zip.GZIPOutputStream
 
-internal fun JsonObject.requireOk(): JsonObject = apply {
-    if (this["ok"]?.jsonPrimitive?.booleanOrNull != true) {
-        throw IOException(this["error"]?.jsonPrimitive?.contentOrNull ?: "agent error: $this")
-    }
-}
-
-internal suspend fun openAgentChannel(header: JsonObject): AgentConnection {
-    Asl.vm.ensureRunning()
-    val conn = Asl.vm.openChannel(header)
-    try {
-        conn.reply.requireOk()
-    } catch (e: IOException) {
-        conn.close()
-        throw e
-    }
-    return conn
-}
-
 class DistroRepository(private val context: Context) : DistroManager {
-    private val json = Json { ignoreUnknownKeys = true; prettyPrint = true; encodeDefaults = true }
     private val registry = AtomicFile(File(context.filesDir, "distros.json"))
     private val disks = File(context.filesDir, "disks").apply { mkdirs() }
     private val state = MutableStateFlow(
         try {
-            json.decodeFromString<List<Distro>>(registry.readFully().decodeToString())
+            SettingsJson.decodeFromString<List<Distro>>(registry.readFully().decodeToString())
         } catch (_: FileNotFoundException) {
             emptyList()
         }
@@ -90,7 +70,7 @@ class DistroRepository(private val context: Context) : DistroManager {
         }
         val out = registry.startWrite()
         try {
-            out.write(json.encodeToString(next).toByteArray())
+            out.write(SettingsJson.encodeToString(next).toByteArray())
             registry.finishWrite(out)
         } catch (e: IOException) {
             registry.failWrite(out)
@@ -104,7 +84,7 @@ class DistroRepository(private val context: Context) : DistroManager {
         state.value.firstOrNull { it.id == distroId } ?: throw IllegalArgumentException("No distribution with id $distroId")
 
     private fun requireNewName(name: String) {
-        require(NAME.matches(name)) { "Invalid distribution name '$name'" }
+        require(DISTRO_NAME.matches(name)) { "Invalid distribution name '$name'" }
         require(state.value.none { it.name.equals(name, ignoreCase = true) }) { "A distribution named '$name' already exists" }
     }
 
@@ -123,7 +103,7 @@ class DistroRepository(private val context: Context) : DistroManager {
     }
 
     override suspend fun catalog(): List<CatalogEntry> = withContext(Dispatchers.IO) {
-        json.decodeFromString(context.assets.open("catalog.json").bufferedReader().use { it.readText() })
+        SettingsJson.decodeFromString(context.assets.open("catalog.json").bufferedReader().use { it.readText() })
     }
 
     override suspend fun install(entry: CatalogEntry, name: String, onProgress: (Progress) -> Unit) = withContext(Dispatchers.IO) {
@@ -179,15 +159,15 @@ class DistroRepository(private val context: Context) : DistroManager {
                 val header = buildJsonObject {
                     put("svc", "import")
                     put("distro", id)
-                    put("device", "/dev/vd${'a' + index}")
+                    put("device", distroDevice(index))
                     put("compression", compression)
                 }
-                openAgentChannel(header).use { conn ->
+                Asl.vm.openAgentChannel(header).use { conn ->
                     copy(input, conn.output, "import", afd.length, onProgress)
                     conn.shutdownOutput()
                     onProgress(Progress("finalize"))
                     val status = conn.input.bufferedReader().readLine() ?: throw IOException("Agent closed the import stream without a status")
-                    json.parseToJsonElement(status).jsonObject.requireOk()
+                    SettingsJson.parseToJsonElement(status).jsonObject.requireOk()
                 }
                 commit { list -> list.map { if (it.id == id) it.copy(pendingImport = false) else it } }
             } catch (e: Throwable) {
@@ -204,7 +184,7 @@ class DistroRepository(private val context: Context) : DistroManager {
         val resolver = context.contentResolver
         val targetName = resolver.query(target, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)
             ?.use { if (it.moveToFirst()) it.getString(0) else null } ?: target.lastPathSegment.orEmpty()
-        openAgentChannel(buildJsonObject { put("svc", "export"); put("distro", distroId) }).use { conn ->
+        Asl.vm.openAgentChannel(buildJsonObject { put("svc", "export"); put("distro", distroId) }).use { conn ->
             val raw = resolver.openOutputStream(target, "wt") ?: throw FileNotFoundException(target.toString())
             (if (targetName.endsWith(".gz")) GZIPOutputStream(raw, 1 shl 16) else raw).use { out ->
                 copy(conn.input, out, "export", -1, onProgress)
@@ -231,7 +211,7 @@ class DistroRepository(private val context: Context) : DistroManager {
         require(new.name == old.name || state.value.none { it.id != distroId && it.name.equals(new.name, ignoreCase = true) }) {
             "A distribution named '${new.name}' already exists"
         }
-        require(NAME.matches(new.name)) { "Invalid distribution name '${new.name}'" }
+        require(DISTRO_NAME.matches(new.name)) { "Invalid distribution name '${new.name}'" }
         commit { list ->
             list.map {
                 when {
@@ -245,7 +225,6 @@ class DistroRepository(private val context: Context) : DistroManager {
     }
 
     private companion object {
-        val NAME = Regex("^[A-Za-z0-9._-]{1,64}$")
         val MAGIC = mapOf(
             "gz" to intArrayOf(0x1f, 0x8b),
             "xz" to intArrayOf(0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00),

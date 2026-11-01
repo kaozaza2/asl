@@ -11,6 +11,10 @@ internal object Avf {
     private const val TAG = "Avf"
     private const val STOP_REASON_SHUTDOWN = 3
 
+    // VirtualMachineConfig.CPU_TOPOLOGY_ONE_CPU / CPU_TOPOLOGY_MATCH_HOST (hidden-API values).
+    private const val CPU_TOPOLOGY_ONE_CPU = 0
+    private const val CPU_TOPOLOGY_MATCH_HOST = 1
+
     private fun cls(name: String): Class<*> = Class.forName("android.system.virtualmachine.$name")
 
     fun call(target: Any, name: String, vararg args: Any?): Any? = invoke(target.javaClass, target, name, args)
@@ -66,7 +70,7 @@ internal object Avf {
         listOf(
             "setProtectedVm" to false,
             "setMemoryBytes" to memoryMb * 1024L * 1024L,
-            "setCpuTopology" to if (matchHostCpus) 1 else 0,
+            "setCpuTopology" to if (matchHostCpus) CPU_TOPOLOGY_MATCH_HOST else CPU_TOPOLOGY_ONE_CPU,
             "setDebugLevel" to 1,
             "setVmOutputCaptured" to true,
             "setConsoleInputDevice" to "hvc0",

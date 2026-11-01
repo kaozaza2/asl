@@ -47,7 +47,6 @@ import dev.asl.ui.settings.SettingsFragment
 import dev.asl.ui.terminal.TerminalSurface
 import dev.asl.ui.terminal.TerminalTab
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
@@ -196,54 +195,60 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
                 launch {
-                    combine(vm.tabs, vm.selected, Asl.settings.settings, Asl.distros.distros) { tabList, selected, settings, distros ->
-                        (surfaces.keys - tabList.toSet()).forEach { tab ->
-                            val surface = surfaces.remove(tab)!!
-                            binding.mainTerminals.removeView(surface.parent as View)
-                            if (tab.view === surface) tab.view = null
-                        }
-                        tabList.forEach { tab ->
-                            val surface = surfaces.getOrPut(tab) {
-                                TerminalSurface(
-                                    this@MainActivity,
-                                    tab,
-                                    vm.latches,
-                                    onExitedEnter = { vm.closeTab(tab) },
-                                    onBell = {
-                                        val bellStyle = Asl.settings.settings.value.appearanceOf(tab).bellStyle
-                                        if (bellStyle == "audible" || bellStyle == "all") tone?.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
-                                        if (bellStyle == "visual" || bellStyle == "all") binding.root.performHapticFeedback(HapticFeedbackConstants.REJECT)
-                                    },
-                                ).also { binding.mainTerminals.addView(FrameLayout(this@MainActivity).apply { addView(it) }) }
-                            }
-                            val appearance = settings.appearanceOf(tab)
-                            val scheme = settings.scheme(appearance.colorScheme)
-                            val padding = (appearance.padding * resources.displayMetrics.density).toInt()
-                            (surface.parent as View).apply {
-                                setBackgroundColor(ColorUtils.setAlphaComponent(Color.parseColor(scheme.background), appearance.opacity * 255 / 100))
-                                setPadding(padding, padding, padding, padding)
-                                visibility = if (tab.id == selected) View.VISIBLE else View.INVISIBLE
-                            }
-                            surface.configure(appearance, scheme)
-                            surface.show(tab.id == selected)
-                        }
-
-                        val terminalSelected = tabList.any { it.id == selected }
-                        binding.mainSettingsContainer.isVisible = selected == SETTINGS_TAB
-                        binding.mainExtraKeysScroll.isVisible = terminalSelected
-                        binding.mainEmpty.isVisible = selected != SETTINGS_TAB && !terminalSelected
-                        binding.mainEmptyTitle.setText(if (distros.isEmpty()) R.string.main_no_distros else R.string.main_no_tabs)
-                        binding.mainEmptyBody.setText(if (distros.isEmpty()) R.string.main_no_distros_body else R.string.main_no_tabs_body)
-                        binding.mainEmptyAction.setText(if (distros.isEmpty()) R.string.main_install_distro else R.string.main_open_tab)
-
-                        // Re-adding keeps this above callbacks the settings fragment registered later.
-                        back.isEnabled = selected != SETTINGS_TAB
-                        back.remove()
-                        onBackPressedDispatcher.addCallback(this@MainActivity, back)
-                    }.collect()
+                    combine(vm.tabs, vm.selected, Asl.settings.settings, Asl.distros.distros) { _, _, _, _ -> }.collect { applyTabState() }
                 }
             }
         }
+    }
+
+    private fun applyTabState() {
+        val tabList = vm.tabs.value
+        val selected = vm.selected.value
+        val settings = Asl.settings.settings.value
+        val distros = Asl.distros.distros.value
+        (surfaces.keys - tabList.toSet()).forEach { tab ->
+            val surface = surfaces.remove(tab)!!
+            binding.mainTerminals.removeView(surface.parent as View)
+            if (tab.view === surface) tab.view = null
+        }
+        tabList.forEach { tab ->
+            val surface = surfaces.getOrPut(tab) {
+                TerminalSurface(
+                    this@MainActivity,
+                    tab,
+                    vm.latches,
+                    onExitedEnter = { vm.closeTab(tab) },
+                    onBell = {
+                        val bellStyle = Asl.settings.settings.value.appearanceOf(tab).bellStyle
+                        if (bellStyle == "audible" || bellStyle == "all") tone?.startTone(ToneGenerator.TONE_PROP_BEEP, 150)
+                        if (bellStyle == "visual" || bellStyle == "all") binding.root.performHapticFeedback(HapticFeedbackConstants.REJECT)
+                    },
+                ).also { binding.mainTerminals.addView(FrameLayout(this@MainActivity).apply { addView(it) }) }
+            }
+            val appearance = settings.appearanceOf(tab)
+            val scheme = settings.scheme(appearance.colorScheme)
+            val padding = (appearance.padding * resources.displayMetrics.density).toInt()
+            (surface.parent as View).apply {
+                setBackgroundColor(ColorUtils.setAlphaComponent(Color.parseColor(scheme.background), appearance.opacity * 255 / 100))
+                setPadding(padding, padding, padding, padding)
+                visibility = if (tab.id == selected) View.VISIBLE else View.INVISIBLE
+            }
+            surface.configure(appearance, scheme)
+            surface.show(tab.id == selected)
+        }
+
+        val terminalSelected = tabList.any { it.id == selected }
+        binding.mainSettingsContainer.isVisible = selected == SETTINGS_TAB
+        binding.mainExtraKeysScroll.isVisible = terminalSelected
+        binding.mainEmpty.isVisible = selected != SETTINGS_TAB && !terminalSelected
+        binding.mainEmptyTitle.setText(if (distros.isEmpty()) R.string.main_no_distros else R.string.main_no_tabs)
+        binding.mainEmptyBody.setText(if (distros.isEmpty()) R.string.main_no_distros_body else R.string.main_no_tabs_body)
+        binding.mainEmptyAction.setText(if (distros.isEmpty()) R.string.main_install_distro else R.string.main_open_tab)
+
+        // Re-adding keeps this above callbacks the settings fragment registered later.
+        back.isEnabled = selected != SETTINGS_TAB
+        back.remove()
+        onBackPressedDispatcher.addCallback(this@MainActivity, back)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

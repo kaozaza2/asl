@@ -114,7 +114,7 @@ abstract class StorePreferenceFragment : PreferenceFragmentCompat() {
                     is ListPreference -> if (p.value != value?.toString()) p.value = value?.toString()
                     is SeekBarPreference -> if (p.value != value) p.value = value as Int
                 }
-                p.summaryProvider = p.summaryProvider
+                p.summaryProvider = p.summaryProvider // Self-assignment forces Preference rebinds; androidx.preference exposes no public notifyChanged.
             }
         }
     }

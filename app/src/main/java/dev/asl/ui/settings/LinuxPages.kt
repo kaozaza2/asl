@@ -21,7 +21,9 @@ import com.google.android.material.R as MaterialR
 import dev.asl.R
 import dev.asl.core.Asl
 import dev.asl.core.CatalogEntry
+import dev.asl.core.DISTRO_NAME
 import dev.asl.core.Distro
+import dev.asl.core.DOCUMENTS_AUTHORITY
 import dev.asl.core.UsbDeviceInfo
 import dev.asl.databinding.ItemSettingsDistroBinding
 import dev.asl.databinding.ItemSettingsNoteBinding
@@ -36,8 +38,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
-private const val DOCUMENTS_AUTHORITY = "dev.asl.documents"
-private val DistroName = Regex("[A-Za-z0-9._-]+")
 private val TarballTypes = arrayOf("application/x-tar", "application/gzip", "application/x-gzip", "application/x-xz", "application/zstd", "application/octet-stream")
 
 private data class DistroRow(val distro: Distro, val running: Boolean)
@@ -64,7 +64,7 @@ class DistrosFragment : Fragment(R.layout.settings_list) {
         title, getString(R.string.settings_distro_name), initial, confirm,
         validate = { name ->
             when {
-                !DistroName.matches(name) -> getString(R.string.settings_distro_name_invalid)
+                !DISTRO_NAME.matches(name) -> getString(R.string.settings_distro_name_invalid)
                 Asl.distros.distros.value.any { it.name.equals(name, ignoreCase = true) } -> getString(R.string.settings_distro_exists)
                 else -> null
             }

@@ -65,7 +65,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                         if (p.source == DISTRO_PROFILE_SOURCE && distros.isNotEmpty() && p.distroId !in ids) p.copy(hidden = true) else p
                     } + generated.filter { it.guid !in known }
                     val fallback = generated.getOrNull(distros.indexOfFirst { it.isDefault }) ?: list.firstOrNull { !it.hidden }
-                    s.copy(defaultProfile = s.defaultProfile ?: fallback?.guid, profiles = s.profiles.copy(list = list))
+                    val next = s.copy(defaultProfile = s.defaultProfile ?: fallback?.guid, profiles = s.profiles.copy(list = list))
+                    // Return the old value when nothing changed, so StateFlow emits and the file is not rewritten.
+                    if (next != s) next else s
                 }
             }
         }
