@@ -23,8 +23,8 @@ jobs:
       run:
         working-directory: guest/agent
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
         with:
           go-version-file: guest/agent/go.mod
           cache-dependency-path: guest/agent/go.sum
@@ -38,12 +38,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 150
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: docker/setup-buildx-action@v3
       # Exposes the Actions cache to the buildx CLI, so the kernel is rebuilt only when guest/ changes.
       - uses: crazy-max/ghaction-github-runtime@v3
       # When the kernel config does change, ccache from the previous build makes the rebuild incremental.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         id: ccache
         with:
           path: ccache
@@ -56,7 +56,7 @@ jobs:
           skip-extraction: ${{ steps.ccache.outputs.cache-hit }}
       - name: Build
         run: guest/build.sh --cache-from type=gha,scope=guest --cache-to type=gha,scope=guest,mode=max
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: guest-image
           path: |
@@ -70,19 +70,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: guest-image
           path: app/src/main/assets/vm
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 17
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
       - name: Assemble
         run: ./gradlew :app:assembleDebug --console=plain
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: asl-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
