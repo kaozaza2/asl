@@ -42,6 +42,12 @@
             app:title="@string/settings_auto_start"
             app:summary="@string/settings_auto_start_summary"
             app:iconSpaceReserved="false" />
+
+        <SwitchPreferenceCompat
+            app:key="audio"
+            app:title="@string/settings_audio"
+            app:summary="@string/settings_audio_summary"
+            app:iconSpaceReserved="false" />
     </PreferenceCategory>
 
     <PreferenceCategory

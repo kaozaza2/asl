@@ -25,6 +25,10 @@ const (
 	displayWidth, displayHeight = 1280, 800
 	displayBasePort             = 5900 // matches the Xvnc/x11vnc default; display windows reserve 5900-5999
 	displayWait                 = 30 * time.Second
+	// Desktop audio, like WSLg's RAIL host side: the default sink's monitor as raw PCM (the
+	// module-simple-protocol-tcp format), streamed to the GUI window over a second forward.
+	audioPort = 47113
+	audioRate = 48000
 )
 
 // displayScript starts one X server flavor and exits, leaving it as an orphan for distro-init.
@@ -49,6 +53,58 @@ fi`, pathEnv, displayWidth, displayHeight, port, displayWidth, displayHeight, po
 // displayRunning reports whether a TCP listener occupies the port in the shared guest network.
 func displayRunning(port int) bool {
 	return slices.Contains(listeningPorts(), port)
+}
+
+// audioScript brings the distro's sound stack up as its user and exports the desktop's sound
+// mix as raw PCM on the module-simple-protocol-tcp. Best effort everywhere: exit 0 leaves the
+// host's pump silent (missing pactl, and pulseaudio refuses to run as root by design), exit 1
+// only means the mix stream is not exported while an existing daemon keeps running.
+func audioScript(port, rate int) string {
+	return fmt.Sprintf(`
+export PATH=%s
+uid=$(id -u)
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$uid}"
+mkdir -p "$XDG_RUNTIME_DIR" 2>/dev/null && chmod 700 "$XDG_RUNTIME_DIR" 2>/dev/null
+command -v pactl >/dev/null 2>&1 || exit 0
+if ! pactl info >/dev/null 2>&1; then
+	if command -v pulseaudio >/dev/null 2>&1; then
+		nohup pulseaudio -D --exit-idle-time=-1 >/dev/null 2>&1 &
+	elif command -v pipewire >/dev/null 2>&1 && command -v pipewire-pulse >/dev/null 2>&1; then
+		nohup pipewire >/dev/null 2>&1 &
+		nohup pipewire-pulse >/dev/null 2>&1 &
+	else
+		exit 0
+	fi
+	for i in $(seq 1 25); do pactl info >/dev/null 2>&1 && break; sleep 0.2; done
+fi
+pactl info >/dev/null 2>&1 || exit 0
+if ! pactl list short modules 2>/dev/null | grep -q module-simple-protocol-tcp; then
+	pactl load-module module-simple-protocol-tcp port=%d format=s16le rate=%d channels=2 source=@DEFAULT_MONITOR@ >/dev/null 2>&1 || exit 1
+fi`, pathEnv, port, rate)
+}
+
+// startAudio is the audio half of the display service, like WSLg's audio daemon next to its
+// graphics one: a background setup (the daemon can take seconds), never blocking the window,
+// and silent when the distro has no sound stack. Idempotent: pactl and the module check make
+// a second window a no-op.
+func (a *agent) startAudio(d *distro, holder int) {
+	go func() {
+		// Root-run pulseaudio exits ("this program is not for root"), so run as the user whose
+		// pulse socket the session env points GUI apps at.
+		cmd := exec.Command("nsenter", "-t", strconv.Itoa(holder), "-m", "-u", "-i", "-p", "-r", "-w", "--", "su", "-l", "--", d.defaultUser(), "-c", audioScript(audioPort, audioRate))
+		cmd.SysProcAttr = &unix.SysProcAttr{Setsid: true}
+		cmd.Stdout, cmd.Stderr = os.Stderr, os.Stderr
+		_, wait, err := spawn(cmd)
+		if err != nil {
+			log.Printf("distro %s: audio setup failed: %v", d.ID, err)
+			return
+		}
+		if code := exitCode(<-wait); code != 0 {
+			log.Printf("distro %s: audio setup exited %d (GUI audio stays silent)", d.ID, code)
+		} else {
+			log.Printf("distro %s: desktop audio on port %d", d.ID, audioPort)
+		}
+	}()
 }
 
 func (a *agent) display(c *conn, raw []byte) error {
@@ -102,6 +158,8 @@ func (a *agent) display(c *conn, raw []byte) error {
 			time.Sleep(250 * time.Millisecond)
 		}
 	}
+	// Audio beside graphics, as far as the distro supports it; never blocks the reply below.
+	a.startAudio(d, holder)
 	d.display.Store(int32(h.Port))
 	return c.reply(obj{"ok": true, "display": ":0", "port": h.Port})
 }

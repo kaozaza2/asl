@@ -9,6 +9,8 @@
     <string name="settings_all_files_needed">Needed to share all of Android\'s storage with Linux. Tap to grant.</string>
     <string name="settings_android_storage">Android storage</string>
     <string name="settings_appearance">Appearance</string>
+    <string name="settings_audio">Audio output</string>
+    <string name="settings_audio_summary">Play the sound of a GUI window\'s distribution; needs PulseAudio or PipeWire installed in it.</string>
     <string name="settings_auto_start">Start automatically</string>
     <string name="settings_auto_start_summary">Boot the virtual machine when ASL starts.</string>
     <string name="settings_back">Back</string>

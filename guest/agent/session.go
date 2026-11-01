@@ -89,6 +89,9 @@ func (a *agent) session(c *conn, raw []byte) error {
 	// GUI: like WSLg's env injection, sessions can drive the distro's display server when one is up.
 	if d.display.Load() != 0 {
 		script = append(script, "export DISPLAY=:0")
+		// Sound stacks talk over this socket: apps reach the user's PulseAudio/PipeWire that
+		// the display service brought up as the same user (shellQuote-free: nothing to quote).
+		script = append(script, `export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"`)
 	}
 	switch {
 	case h.Cwd == "" || h.Cwd == "~":

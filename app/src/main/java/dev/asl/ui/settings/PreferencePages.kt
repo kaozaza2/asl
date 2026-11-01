@@ -264,6 +264,7 @@ class VmFragment : StorePreferenceFragment() {
         "defaultDiskSizeGb" to intField(1..2048, " GB", { it.asl.defaultDiskSizeGb }) { s, v -> s.copy(asl = s.asl.copy(defaultDiskSizeGb = v)) },
         "kernelCommandLine" to Field({ it.asl.kernelCommandLine }, { s, v -> s.copy(asl = s.asl.copy(kernelCommandLine = v as String? ?: "")) }, monospace = true),
         "autoStart" to Field({ it.asl.autoStart }, { s, v -> s.copy(asl = s.asl.copy(autoStart = v as Boolean)) }),
+        "audio" to Field({ it.asl.audio }, { s, v -> s.copy(asl = s.asl.copy(audio = v as Boolean)) }),
         "mountAndroidStorage" to Field({ it.asl.mountAndroidStorage }, { s, v -> s.copy(asl = s.asl.copy(mountAndroidStorage = v as Boolean)) }),
         "androidStoragePath" to Field(
             { it.asl.androidStoragePath },

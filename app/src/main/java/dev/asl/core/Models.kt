@@ -74,6 +74,8 @@ data class VmSettings(
     val androidStoragePath: String = "/storage/emulated/0",
     val defaultDiskSizeGb: Int = 64,
     val autoStart: Boolean = false,
+    /** GUI windows stream the distro's desktop sound; silence when the distro has no sound stack. */
+    val audio: Boolean = true,
 )
 
 @Serializable

@@ -17,7 +17,7 @@ Run real Linux distributions on Android the way WSL2 runs them on Windows. ASL b
 | `\\wsl$\<distro>` in Explorer | A DocumentsProvider root per distro, "ASL: &lt;name&gt;", in the Files app and every file picker |
 | `/mnt/c` automount | Android shared storage at `/mnt/android`, served by a 9P2000.L server in the app |
 | localhost forwarding | Guest TCP listeners on ports ≥ 1024 are bound on Android's `127.0.0.1`/`::1`, or on all interfaces |
-| WSLg — Linux GUI apps | GUI profiles open a window showing the distro's desktop: the agent runs an X server with a VNC port inside the distro (Xvnc, or Xvfb with x11vnc), and an RFB client renders it over the forward service; terminal sessions get `DISPLAY=:0` while it runs. Apps appear in one desktop per distro, not as separate windows like WSLg. |
+| WSLg — Linux GUI apps | GUI profiles open a window showing the distro's desktop: the agent runs an X server with a VNC port inside the distro (Xvnc, or Xvfb with x11vnc), and an RFB client renders it over the forward service; terminal sessions get `DISPLAY=:0` while it runs. Input works out: IME text as key events, pinch-zoom and pan, mouse wheel. Sound plays when the distro has PulseAudio or PipeWire — the agent starts it and streams the desktop's mix as raw PCM. Apps appear in one desktop per distro, not as separate windows like WSLg. |
 | usbipd-win | USB passthrough over USB/IP: Android is the server, the guest's `vhci_hcd` attaches over vsock |
 | `wsl.conf` / `.wslconfig` | `/etc/wsl.conf` (`[boot]`, `[user]`, `[network]`, `[automount]`) in each distro / Settings → Virtual machine |
 | systemd | `[boot] systemd=true` runs the distro's systemd as PID 1 in its namespace |
@@ -97,7 +97,7 @@ Each distribution is a sparse ext4 disk image attached to the VM at boot, so ins
 - **USB:**
   - No isochronous transfers (audio devices, webcams), because the Android USB host API doesn't support them.
   - Low-speed devices are reported as full speed.
-- **Not available:** WSLg (GUI apps), Windows-style interop, and nested virtualization.
+- **Not available:** Windows-style interop and nested virtualization.
 - **Abrupt shutdowns:** if Android kills the app, the VM stops without a clean shutdown. The guest writes changes to disk within a few seconds to limit what's lost.
 
 ## Contributing

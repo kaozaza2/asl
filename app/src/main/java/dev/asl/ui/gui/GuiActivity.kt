@@ -4,15 +4,14 @@ import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import dev.asl.R
 import dev.asl.core.AgentConnection
 import dev.asl.core.Asl
 import dev.asl.core.openAgentChannel
 import dev.asl.ui.terminal.VmPermissions
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.buildJsonObject
@@ -28,6 +27,7 @@ import java.io.IOException
 class GuiActivity : AppCompatActivity() {
     private lateinit var surface: GuiSurface
     private var client: RfbClient? = null
+    private var pump: AudioPump? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,15 +35,11 @@ class GuiActivity : AppCompatActivity() {
         setContentView(surface)
         surface.setBackgroundColor(Color.BLACK)
         title = intent.getStringExtra(EXTRA_NAME) ?: getString(R.string.app_name)
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                launch(Dispatchers.IO) { start(intent.getStringExtra(EXTRA_DISTRO)) }
-            }
-        }
+        lifecycleScope.launch(Dispatchers.IO) { start(intent.getStringExtra(EXTRA_DISTRO)) }
     }
 
-    /** Blocks its IO coroutine until the window ends: the stream only ends when the server does. */
-    private suspend fun start(distroId: String?) {
+    /** Runs on IO until the window ends: the RFB stream only ends when the server does. */
+    private suspend fun CoroutineScope.start(distroId: String?) {
         val onScreen = { text: String -> runOnUiThread { surface.status = text } }
         val missing = VmPermissions.filter { checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
         when {
@@ -58,6 +54,11 @@ class GuiActivity : AppCompatActivity() {
                     ?: distros.firstOrNull { it.isDefault } ?: distros.firstOrNull() ?: throw IOException(getString(R.string.main_no_distros))
                 // Ports follow the registry order the guest already uses for disks and forwarding.
                 val port = 5900 + distros.indexOfFirst { it.id == distro.id }
+                // Sound alongside graphics, as far as the distro supports it; the pump degrades
+                // to silence by itself when the distribution has no sound stack.
+                if (Asl.settings.settings.value.asl.audio) {
+                    pump = AudioPump { !isFinishing }.also { launch { it.run() } }
+                }
                 // Blocks until the RFB port is listening; the display can outlive windows.
                 Asl.vm.openAgentChannel(buildJsonObject {
                     put("svc", "display"); put("distro", distro.id); put("port", port)
@@ -99,12 +100,15 @@ class GuiActivity : AppCompatActivity() {
             rfb.run()
         } catch (e: Exception) {
             if (e is CancellationException) throw e
+            // Handshake failures return without updating the stream, so it stays open: close it.
+            client?.close()
             runOnUiThread { surface.onClose(e.message ?: e.toString()) }
         }
     }
 
     override fun onDestroy() {
         client?.close()
+        pump?.close()
         super.onDestroy()
     }
 
