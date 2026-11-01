@@ -219,14 +219,14 @@ class DistroDocumentsProvider : DocumentsProvider() {
         val isDir = mimeType == Document.MIME_TYPE_DIR
         val mime = MimeTypeMap.getSingleton()
         val extension = mime.getExtensionFromMimeType(mimeType)
-        // The name's own extension, when the name carries one ("notes.txt", not "archive.").
+        // Octet-stream means "unknown type", so trust the name as given — Linux files are often
+        // bare, like Makefile or LICENSE. For a known type, add the extension only when the name
+        // does not already carry one that maps to it.
         val nameExtension = displayName.substringAfterLast('.', "").lowercase()
-        val hasExtension = displayName.contains('.') && nameExtension.isNotEmpty()
         val name = when {
             isDir || extension == null || displayName.endsWith(".$extension") -> displayName
-            // Editors pass the real filename with a generic type ("notes.save" as octet-stream); trust the name.
-            hasExtension && mimeType == "application/octet-stream" -> displayName
-            hasExtension && mime.getMimeTypeFromExtension(nameExtension) == mimeType -> displayName
+            mimeType == "application/octet-stream" -> displayName
+            nameExtension.isNotEmpty() && mime.getMimeTypeFromExtension(nameExtension) == mimeType -> displayName
             else -> "$displayName.$extension"
         }
         val parent = DocumentId.parse(parentDocumentId)
