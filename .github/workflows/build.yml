@@ -1,0 +1,72 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  agent:
+    name: Guest agent checks
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: guest/agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: guest/agent/go.mod
+          cache-dependency-path: guest/agent/go.sum
+      - name: gofmt
+        run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+      - name: go vet
+        run: GOOS=linux GOARCH=arm64 go vet ./...
+
+  guest:
+    name: Guest kernel and initramfs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      # Exposes the Actions cache to the buildx CLI, so the kernel is rebuilt only when guest/ changes.
+      - uses: crazy-max/ghaction-github-runtime@v3
+      - name: Build
+        run: guest/build.sh --cache-from type=gha,scope=guest --cache-to type=gha,scope=guest,mode=max
+      - uses: actions/upload-artifact@v4
+        with:
+          name: guest-image
+          path: |
+            app/src/main/assets/vm/Image
+            app/src/main/assets/vm/initrd.img
+          retention-days: 7
+
+  apk:
+    name: Debug APK
+    needs: guest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: guest-image
+          path: app/src/main/assets/vm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Assemble
+        run: ./gradlew :app:assembleDebug --console=plain
+      - uses: actions/upload-artifact@v4
+        with:
+          name: asl-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk

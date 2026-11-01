@@ -1,5 +1,7 @@
 # ASL — Android Subsystem for Linux
 
+[![Build](https://github.com/kaozaza2/asl/actions/workflows/build.yml/badge.svg)](https://github.com/kaozaza2/asl/actions/workflows/build.yml)
+
 Run real Linux distributions on Android the way WSL2 runs them on Windows. ASL boots one lightweight utility VM through the **Android Virtualization Framework (AVF)**, hosts every distribution in it in its own namespaces, and gives you a terminal modeled on **Windows Terminal**.
 
 > **Status: early development.** It runs on real hardware (tested on a Galaxy Tab S10 with Android 17), but expect rough edges. Only **aarch64 (arm64-v8a)** devices are supported for now.
@@ -46,6 +48,8 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
 Then grant the permissions above, open ASL, and install a distribution from Settings → Distributions.
+
+Every push to `main` and every pull request is built by [GitHub Actions](.github/workflows/build.yml). The debug APK, with the guest image bundled, is attached to each run as the `asl-debug-apk` artifact.
 
 ## How it works
 
