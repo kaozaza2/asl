@@ -9,14 +9,16 @@ on:
 permissions:
   contents: read
 
+# Pushes to main queue so a long kernel build finishes and lands in the cache; superseded PR runs are canceled.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   agent:
     name: Guest agent checks
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: guest/agent
@@ -34,11 +36,24 @@ jobs:
   guest:
     name: Guest kernel and initramfs
     runs-on: ubuntu-latest
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
       # Exposes the Actions cache to the buildx CLI, so the kernel is rebuilt only when guest/ changes.
       - uses: crazy-max/ghaction-github-runtime@v3
+      # When the kernel config does change, ccache from the previous build makes the rebuild incremental.
+      - uses: actions/cache@v4
+        id: ccache
+        with:
+          path: ccache
+          key: kernel-ccache-${{ hashFiles('guest/Dockerfile', 'guest/kernel/asl.config') }}
+          restore-keys: kernel-ccache-
+      - uses: reproducible-containers/buildkit-cache-dance@v3
+        with:
+          cache-map: |
+            { "ccache": { "target": "/ccache", "id": "asl-kernel-ccache" } }
+          skip-extraction: ${{ steps.ccache.outputs.cache-hit }}
       - name: Build
         run: guest/build.sh --cache-from type=gha,scope=guest --cache-to type=gha,scope=guest,mode=max
       - uses: actions/upload-artifact@v4
@@ -53,6 +68,7 @@ jobs:
     name: Debug APK
     needs: guest
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4

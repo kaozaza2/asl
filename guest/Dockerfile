@@ -6,23 +6,31 @@ ARG GO_VERSION=1.23
 FROM --platform=$BUILDPLATFORM debian:bookworm-slim AS kernel
 ARG KERNEL_VERSION
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        bc bison ca-certificates flex gcc libc6-dev libelf-dev libssl-dev make perl python3 wget xz-utils \
+        bc bison ca-certificates ccache flex gcc libc6-dev libelf-dev libssl-dev make perl python3 wget xz-utils \
     && if [ "$(uname -m)" != aarch64 ]; then apt-get install -y --no-install-recommends gcc-aarch64-linux-gnu binutils-aarch64-linux-gnu; fi \
     && rm -rf /var/lib/apt/lists/*
-WORKDIR /src
-RUN wget -qO- https://cdn.kernel.org/pub/linux/kernel/v${KERNEL_VERSION%%.*}.x/linux-${KERNEL_VERSION}.tar.xz | tar -xJ --strip-components=1
 COPY kernel/asl.config /tmp/asl.config
-RUN set -eu; \
+# One layer from download to cleanup, so the cached result is just the Image, not the build tree.
+# A VM needs none of the SoC platforms, and they pull in most of defconfig's built-in drivers, so they are dropped first.
+# ccache lives in a cache mount (persisted by CI) so a config change recompiles only what it touches.
+RUN --mount=type=cache,id=asl-kernel-ccache,target=/ccache set -eu; \
+    mkdir /src && cd /src; \
+    wget -qO- https://cdn.kernel.org/pub/linux/kernel/v${KERNEL_VERSION%%.*}.x/linux-${KERNEL_VERSION}.tar.xz | tar -xJ --strip-components=1; \
     if [ "$(uname -m)" != aarch64 ]; then export CROSS_COMPILE=aarch64-linux-gnu-; fi; \
-    export ARCH=arm64; \
+    export ARCH=arm64 CCACHE_DIR=/ccache CCACHE_MAXSIZE=2G; \
+    for p in $(sed -En 's/^(menu)?config (ARCH_[A-Z0-9_]+)$/\2/p' arch/arm64/Kconfig.platforms); do \
+        sed -i "/^CONFIG_${p}=y$/d" arch/arm64/configs/defconfig; \
+    done; \
     make defconfig; \
     scripts/kconfig/merge_config.sh -m .config /tmp/asl.config; \
     make olddefconfig; \
-    for opt in VSOCKETS VIRTIO_VSOCKETS NET_9P_FD 9P_FS USBIP_VHCI_HCD EXT4_FS PID_NS; do \
+    for opt in VSOCKETS VIRTIO_VSOCKETS NET_9P_FD 9P_FS USBIP_VHCI_HCD EXT4_FS PID_NS PCI_HOST_GENERIC VIRTIO_PCI VIRTIO_BLK VIRTIO_NET VIRTIO_CONSOLE; do \
         grep -qx "CONFIG_${opt}=y" .config || { echo "CONFIG_${opt} is not =y" >&2; exit 1; }; \
     done; \
-    make -j"$(nproc)" Image; \
-    cp arch/arm64/boot/Image /Image
+    make -j"$(nproc)" CC="ccache ${CROSS_COMPILE:-}gcc" Image; \
+    ccache -s; \
+    cp arch/arm64/boot/Image /Image; \
+    cd / && rm -rf /src
 
 FROM --platform=$BUILDPLATFORM golang:${GO_VERSION} AS agent
 WORKDIR /src
