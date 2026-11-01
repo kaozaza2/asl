@@ -105,4 +105,4 @@ Agent replies `{"ok":true}`, then `mount -t 9p -o trans=fd,rfdno=<fd>,wfdno=<fd>
 ## Distro configuration inside the guest
 
 Like WSL, the agent honors `/etc/wsl.conf` (also read as `/etc/asl.conf`) in each distro:
-`[boot] systemd, command` · `[user] default` · `[network] hostname, generateHosts, generateResolvConf` · `[automount] enabled, root`.
+`[boot] systemd, command` · `[user] default` · `[network] hostname, generateHosts` (writes `/etc/hosts` and `/etc/hostname`, so an init like systemd keeps the name)`, generateResolvConf` · `[automount] enabled, root`.
