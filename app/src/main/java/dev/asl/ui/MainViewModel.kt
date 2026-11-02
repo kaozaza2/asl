@@ -31,7 +31,7 @@ const val ACTION_RUN = "dev.asl.action.RUN"
 const val SETTINGS_TAB = -1L
 const val NO_TAB = -2L
 
-class DistroTask(val label: String) {
+class DistroTask(val label: String, val distroId: String? = null) {
     val progress = MutableStateFlow<Progress?>(null)
     val error = MutableStateFlow<String?>(null)
 }
@@ -144,8 +144,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun runDistroTask(label: String, block: suspend (onProgress: (Progress) -> Unit) -> Unit) {
-        val current = DistroTask(label).also { task.value = it }
+    fun runDistroTask(label: String, block: suspend (onProgress: (Progress) -> Unit) -> Unit) = runDistroTask(null, label, block)
+
+    /** [distroId] marks the settings row the task runs in, so its item is disabled and shows progress. */
+    fun runDistroTask(distroId: String?, label: String, block: suspend (onProgress: (Progress) -> Unit) -> Unit) {
+        val current = DistroTask(label, distroId).also { task.value = it }
         launch({ current.error.value = it }) {
             block { current.progress.value = it }
             task.compareAndSet(current, null)

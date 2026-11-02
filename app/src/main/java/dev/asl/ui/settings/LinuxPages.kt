@@ -38,9 +38,11 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
+// tarballs, including the WSL-style .wsl extension: file pickers report it as application/octet-stream,
+// and importTarball identifies compression by magic bytes, not extension.
 private val TarballTypes = arrayOf("application/x-tar", "application/gzip", "application/x-gzip", "application/x-xz", "application/zstd", "application/octet-stream")
 
-private data class DistroRow(val distro: Distro, val running: Boolean)
+private data class DistroRow(val distro: Distro, val running: Boolean, val busy: Boolean = false)
 
 /** `wsl --list --verbose` with the rest of wsl.exe's distribution verbs. */
 class DistrosFragment : Fragment(R.layout.settings_list) {
@@ -50,7 +52,8 @@ class DistrosFragment : Fragment(R.layout.settings_list) {
         val distro = exporting
         exporting = null
         if (uri != null && distro != null) {
-            vm.runDistroTask(getString(R.string.settings_task_export, distro.name)) { Asl.distros.export(distro.id, uri, it) }
+            // The distro id tags the task so the settings row locks and shows progress while exporting.
+            vm.runDistroTask(distro.id, getString(R.string.settings_task_export, distro.name)) { Asl.distros.export(distro.id, uri, it) }
         }
     }
     private val importLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -109,16 +112,25 @@ class DistrosFragment : Fragment(R.layout.settings_list) {
         }
         header.importTarball.setOnClickListener { importLauncher.launch(TarballTypes) }
         header.dismiss.setOnClickListener { vm.task.value = null }
+        // One task at a time: while one runs, keep new install/import from restomping it or double-picking a file.
+        collectWhileStarted(vm.task) { state ->
+            header.install.isEnabled = state == null
+            header.importTarball.isEnabled = state == null
+        }
 
-        val items = ItemAdapter(ItemSettingsDistroBinding::inflate, { row: DistroRow -> row.distro.id }) { (distro, running) ->
+        val items = ItemAdapter(ItemSettingsDistroBinding::inflate, { row: DistroRow -> row.distro.id }) { (distro, running, busy) ->
             name.text = if (distro.isDefault) getString(R.string.settings_distro_default, distro.name) else distro.name
             details.text = listOfNotNull(
                 getString(if (running) R.string.settings_running else R.string.settings_stopped),
                 getString(R.string.settings_distro_user, distro.defaultUser),
                 distro.source,
             ).joinToString(" · ")
-            root.setOnClickListener { vm.openTab(vm.profileFor(distro)) }
+            // Busy rows (e.g. being unregistered) show an indeterminate bar and swallow taps instead of acting.
+            progress.isVisible = busy
+            root.setOnClickListener { if (!busy) vm.openTab(vm.profileFor(distro)) }
+            more.isVisible = !busy
             more.setOnClickListener { anchor ->
+                if (busy) return@setOnClickListener
                 val popup = PopupMenu(context, anchor)
                 popup.inflate(R.menu.settings_distro)
                 popup.menu.findItem(R.id.terminate).isEnabled = running
@@ -153,7 +165,11 @@ class DistrosFragment : Fragment(R.layout.settings_list) {
                         }
                         R.id.unregister -> confirmDialog(
                             getString(R.string.settings_unregister_title, distro.name), getString(R.string.settings_unregister_message), getString(R.string.settings_unregister),
-                        ) { vm.launch { Asl.distros.unregister(distro.id) } }
+                        ) {
+                            vm.runDistroTask(distro.id, getString(R.string.settings_task_unregister, distro.name)) {
+                                Asl.distros.unregister(distro.id, it)
+                            }
+                        }
                     }
                     true
                 }
@@ -163,7 +179,12 @@ class DistrosFragment : Fragment(R.layout.settings_list) {
         list.itemAnimator = null
         list.adapter = ConcatAdapter(ViewAdapter(header.root), items)
 
-        collectWhileStarted(combine(Asl.distros.distros, Asl.vm.runningDistros) { distros, running -> distros.map { DistroRow(it, it.id in running) } }) { rows ->
+        collectWhileStarted(
+            combine(Asl.distros.distros, Asl.vm.runningDistros, vm.task) { distros, running, task ->
+                // pendingImport: the import created this distro but has not claimed it finished yet.
+                distros.map { DistroRow(it, it.id in running, task?.distroId == it.id || it.pendingImport) }
+            },
+        ) { rows ->
             header.empty.isVisible = rows.isEmpty()
             items.submitList(rows)
         }

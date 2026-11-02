@@ -139,6 +139,7 @@
     <string name="settings_task_export">Exporting %1$s</string>
     <string name="settings_task_import">Importing %1$s</string>
     <string name="settings_task_install">Installing %1$s</string>
+    <string name="settings_task_unregister">Unregistering %1$s</string>
     <string name="settings_terminate">Terminate</string>
     <string name="settings_text">Text</string>
     <string name="settings_theme">Application theme</string>

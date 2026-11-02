@@ -62,7 +62,7 @@ interface DistroManager {
     suspend fun install(entry: CatalogEntry, name: String, onProgress: (Progress) -> Unit)
     suspend fun import(name: String, tarball: Uri, onProgress: (Progress) -> Unit)
     suspend fun export(distroId: String, target: Uri, onProgress: (Progress) -> Unit)
-    suspend fun unregister(distroId: String)
+    suspend fun unregister(distroId: String, onProgress: (Progress) -> Unit = {})
     suspend fun setDefault(distroId: String)
     suspend fun update(distroId: String, transform: (Distro) -> Distro)
 }

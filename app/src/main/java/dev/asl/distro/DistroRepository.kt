@@ -15,6 +15,7 @@ import dev.asl.core.distroDevice
 import dev.asl.core.openAgentChannel
 import dev.asl.core.requireOk
 import dev.asl.settings.SettingsJson
+import dev.asl.settings.distroProfile
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
@@ -192,14 +193,25 @@ class DistroRepository(private val context: Context) : DistroManager {
         }
     }
 
-    override suspend fun unregister(distroId: String) = withContext(Dispatchers.IO) {
+    override suspend fun unregister(distroId: String, onProgress: (Progress) -> Unit) = withContext(Dispatchers.IO) {
         val distro = find(distroId)
         val vmWasRunning = Asl.vm.status.value.state == VmState.Running
+        onProgress(Progress("stopping"))
         if (distroId in Asl.vm.runningDistros.value) Asl.vm.terminate(distroId)
+        // Delete the profile the WSL generator created for this distro rather than leaving it hidden.
+        val generated = distroProfile(distro).guid
+        Asl.settings.update { s ->
+            val profiles = s.profiles.copy(list = s.profiles.list.filterNot { it.guid == generated })
+            if (s.defaultProfile == generated) s.copy(defaultProfile = null, profiles = profiles) else s.copy(profiles = profiles)
+        }
         commit { list -> list.filterNot { it.id == distroId } }
+        onProgress(Progress("deleting"))
         File(distro.diskPath).delete()
         // Device letters follow registry order, so the remaining disks must be reattached.
-        if (vmWasRunning) Asl.vm.restart()
+        if (vmWasRunning) {
+            onProgress(Progress("restarting"))
+            Asl.vm.restart()
+        }
         Unit
     }
 

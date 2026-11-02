@@ -11,7 +11,7 @@ Run real Linux distributions on Android the way WSL2 runs them on Windows. ASL b
 | WSL | ASL |
 |-----|-----|
 | Utility VM, one namespace set per distro | Non-protected AVF VM running `asl-init` as PID 1; each distro gets its own mount, pid, uts and ipc namespaces and shares one network |
-| `wsl --install`, `--import`, `--export`, `--unregister`, `--set-default`, `--terminate`, `--shutdown` | Settings → Distributions: install from a catalog (Ubuntu, Debian, Alpine, Arch Linux ARM, Fedora), import any rootfs tarball, export, unregister, set default, terminate; Settings → Virtual machine: start, shut down, restart |
+| `wsl --install`, `--import`, `--export`, `--unregister`, `--set-default`, `--terminate`, `--shutdown` | Settings → Distributions: install from a catalog (Ubuntu, Debian, Alpine, Arch Linux ARM, Fedora), import any rootfs tarball (`.tar`, `.tar.gz`, WSL-style `.wsl`, …), export, unregister, set default, terminate; Settings → Virtual machine: start, shut down, restart |
 | First-run setup from `/etc/wsl-distribution.conf` `[oobe]` | Same file and keys: the image's OOBE runs once in the first terminal; without one the distro logs in as root |
 | `wsl -d X -u U --cd D -- cmd` | Profiles, plus the `dev.asl.action.RUN` intent (`distro`, `command`, `cwd` extras) |
 | `\\wsl$\<distro>` in Explorer | A DocumentsProvider root per distro, "ASL: &lt;name&gt;", in the Files app and every file picker |
