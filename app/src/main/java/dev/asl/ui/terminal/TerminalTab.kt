@@ -22,14 +22,10 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 val VmPermissions = listOf("android.permission.MANAGE_VIRTUAL_MACHINE", "android.permission.USE_CUSTOM_VIRTUAL_MACHINE")
 
-enum class TabState { Starting, Running, Exited }
-
 /** One terminal tab: a Termux emulator fed by an agent session in the VM. */
 class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSessionClient {
     private val _title = MutableStateFlow(profile.tabTitle ?: profile.name)
     val title: StateFlow<String> = _title.asStateFlow()
-    private val _state = MutableStateFlow(TabState.Starting)
-    val state: StateFlow<TabState> = _state.asStateFlow()
     var view: TerminalSurface? = null
 
     private var remote: AgentSession? = null
@@ -64,7 +60,6 @@ class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSess
                 val (cols, rows) = size.filterNotNull().first()
                 val opened = Asl.vm.openSession(request.copy(cols = cols, rows = rows))
                 remote = opened
-                _state.value = TabState.Running
                 if (booting) print("\r\u001b[2K")
                 val pump = launch { opened.output.collect { terminal.feed(it, 0, it.size) } }
                 val code = opened.exitCode.await()
@@ -87,9 +82,7 @@ class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSess
         if (profile.tabTitle == null) terminal.title?.takeIf { it.isNotBlank() }?.let { _title.value = it }
     }
 
-    override fun onSessionFinished(finishedSession: TerminalSession) {
-        _state.value = TabState.Exited
-    }
+    override fun onSessionFinished(finishedSession: TerminalSession) = Unit
 
     override fun onCopyTextToClipboard(session: TerminalSession, text: String?) {
         view?.copy(text ?: return)
