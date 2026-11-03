@@ -1,7 +1,6 @@
 package dev.asl.ui.terminal
 
 import android.content.Context
-import android.content.pm.PackageManager
 import com.termux.terminal.TerminalSession
 import dev.asl.R
 import dev.asl.core.Asl
@@ -9,6 +8,7 @@ import dev.asl.core.Profile
 import dev.asl.core.SessionRequest
 import dev.asl.core.TerminalSession as AgentSession
 import dev.asl.core.VmState
+import dev.asl.vm.missingVmPermissions
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
-val VmPermissions = listOf("android.permission.MANAGE_VIRTUAL_MACHINE", "android.permission.USE_CUSTOM_VIRTUAL_MACHINE")
 
 /** One terminal tab: a Termux emulator fed by an agent session in the VM. */
 class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSessionClient {
@@ -45,7 +44,7 @@ class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSess
 
     fun start(scope: CoroutineScope, context: Context, request: SessionRequest) {
         job = scope.launch {
-            val missing = VmPermissions.filter { context.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
+            val missing = context.missingVmPermissions()
             if (missing.isNotEmpty()) {
                 return@launch end(
                     "\u001b[91m${context.getString(R.string.main_vm_permission)}\u001b[0m\r\n${context.getString(R.string.main_vm_adb_command)}\r\n\r\n" +

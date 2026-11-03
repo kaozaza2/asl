@@ -2,12 +2,8 @@ package dev.asl.ui.settings
 
 import android.content.ClipData
 import android.content.ClipboardManager
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
-import android.provider.Settings
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -30,10 +26,19 @@ import dev.asl.settings.DISTRO_PROFILE_SOURCE
 import dev.asl.settings.appearanceOf
 import dev.asl.settings.scheme
 import dev.asl.settings.visibleProfiles
+import dev.asl.ui.OnboardingActivity
 import dev.asl.ui.terminal.BundledFontNames
-import dev.asl.ui.terminal.VmPermissions
 import dev.asl.ui.terminal.importFont
 import dev.asl.ui.terminal.importedFonts
+import dev.asl.vm.allFilesAccessIntent
+import dev.asl.vm.appDetailsIntent
+import dev.asl.vm.batteryExemptionIntent
+import dev.asl.vm.ignoresBatteryOptimizations
+import dev.asl.vm.missingVmPermissions
+import dev.asl.vm.notificationSettingsIntent
+import dev.asl.vm.notificationsEnabled
+import dev.asl.vm.openSettingsScreen
+import dev.asl.vm.vmGrantCommands
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -57,7 +62,10 @@ class StartupFragment : StorePreferenceFragment() {
 
 class AppearanceFragment : StorePreferenceFragment() {
     override val xml = intArrayOf(R.xml.pref_app_appearance)
-    override fun fields() = mapOf("theme" to Field({ it.theme }, { s, v -> s.copy(theme = v as String) }))
+    override fun fields() = mapOf(
+        "theme" to Field({ it.theme }, { s, v -> s.copy(theme = v as String) }),
+        "keepScreenOn" to Field({ it.keepScreenOn }, { s, v -> s.copy(keepScreenOn = v as Boolean) }),
+    )
 }
 
 /** Profiles › Defaults when the argument is empty, otherwise the profile with that guid. */
@@ -263,6 +271,7 @@ class VmFragment : StorePreferenceFragment() {
         "defaultDiskSizeGb" to intField(1..2048, " GB", { it.asl.defaultDiskSizeGb }) { s, v -> s.copy(asl = s.asl.copy(defaultDiskSizeGb = v)) },
         "kernelCommandLine" to Field({ it.asl.kernelCommandLine }, { s, v -> s.copy(asl = s.asl.copy(kernelCommandLine = v as String? ?: "")) }, monospace = true),
         "autoStart" to Field({ it.asl.autoStart }, { s, v -> s.copy(asl = s.asl.copy(autoStart = v as Boolean)) }),
+        "keepAwake" to Field({ it.asl.keepAwake }, { s, v -> s.copy(asl = s.asl.copy(keepAwake = v as Boolean)) }),
         "mountAndroidStorage" to Field({ it.asl.mountAndroidStorage }, { s, v -> s.copy(asl = s.asl.copy(mountAndroidStorage = v as Boolean)) }),
         "androidStoragePath" to Field(
             { it.asl.androidStoragePath },
@@ -275,9 +284,9 @@ class VmFragment : StorePreferenceFragment() {
         val context = requireContext()
         val category = findPreference<PreferenceCategory>("status") ?: return
         category.addPreference(status)
-        val missing = VmPermissions.filter { context.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
+        val missing = context.missingVmPermissions()
         if (missing.isNotEmpty()) {
-            val commands = missing.joinToString("\n") { "adb shell pm grant ${context.packageName} $it" }
+            val commands = context.vmGrantCommands(missing)
             category.addPreference(
                 Preference(context).apply {
                     title = getString(R.string.settings_permission_required)
@@ -293,7 +302,19 @@ class VmFragment : StorePreferenceFragment() {
             )
         }
         findPreference<Preference>("allFiles")?.setOnPreferenceClickListener {
-            startActivity(Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION, Uri.fromParts("package", context.packageName, null)))
+            context.openSettingsScreen(context.allFilesAccessIntent())
+            true
+        }
+        findPreference<Preference>("setup")?.setOnPreferenceClickListener {
+            OnboardingActivity.start(context)
+            true
+        }
+        findPreference<Preference>("battery")?.setOnPreferenceClickListener {
+            context.openSettingsScreen(if (context.ignoresBatteryOptimizations()) context.appDetailsIntent() else context.batteryExemptionIntent())
+            true
+        }
+        findPreference<Preference>("notifications")?.setOnPreferenceClickListener {
+            context.openSettingsScreen(context.notificationSettingsIntent())
             true
         }
         findPreference<PreferenceCategory>("console")?.addPreference(console)
@@ -309,6 +330,11 @@ class VmFragment : StorePreferenceFragment() {
         super.onResume()
         findPreference<Preference>("allFiles")?.summary =
             getString(if (Environment.isExternalStorageManager()) R.string.settings_all_files_granted else R.string.settings_all_files_needed)
+        val context = requireContext()
+        findPreference<Preference>("battery")?.summary =
+            getString(if (context.ignoresBatteryOptimizations()) R.string.settings_battery_granted else R.string.settings_battery_needed)
+        findPreference<Preference>("notifications")?.summary =
+            getString(if (context.notificationsEnabled()) R.string.settings_notifications_granted else R.string.settings_notifications_needed)
     }
 }
 

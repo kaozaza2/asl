@@ -12,6 +12,10 @@
     <string name="settings_auto_start">Start automatically</string>
     <string name="settings_auto_start_summary">Boot the virtual machine when ASL starts.</string>
     <string name="settings_back">Back</string>
+    <string name="settings_background">Running in the background</string>
+    <string name="settings_battery">Battery usage</string>
+    <string name="settings_battery_granted">Unrestricted. Android won\'t pause the virtual machine to save battery.</string>
+    <string name="settings_battery_needed">Optimized. Android may pause or stop the virtual machine in the background. Tap to allow unrestricted use.</string>
     <string name="settings_bell_style">Bell notification style</string>
     <string name="settings_bind_all">Bind to all interfaces</string>
     <string name="settings_bind_all_summary">Listen on 0.0.0.0 so other devices on your network can connect.</string>
@@ -79,6 +83,10 @@
     <string name="settings_installed_distros">Installed distributions</string>
     <string name="settings_json">Open JSON file</string>
     <string name="settings_json_invalid">Invalid settings</string>
+    <string name="settings_keep_awake">Keep running with the screen off</string>
+    <string name="settings_keep_screen_on">Keep screen on</string>
+    <string name="settings_keep_screen_on_summary">Stops the display from turning off while ASL is open.</string>
+    <string name="settings_keep_awake_summary">Keeps the CPU awake while the virtual machine runs. Uses more battery.</string>
     <string name="settings_kernel_cmdline">Kernel command line</string>
     <string name="settings_kernel_cmdline_summary">Appended to ASL\'s own kernel arguments.</string>
     <string name="settings_launch_mode">Launch mode</string>
@@ -93,6 +101,9 @@
     <string name="settings_network">Networking</string>
     <string name="settings_new_profile">New profile</string>
     <string name="settings_no_file_manager">No file manager can open %1$s</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_notifications_granted">Shown. The virtual machine notification lets you shut it down.</string>
+    <string name="settings_notifications_needed">Off. You won\'t see the virtual machine notification. Tap to turn on.</string>
     <string name="settings_of_size">of %1$s</string>
     <string name="settings_opacity">Background opacity</string>
     <string name="settings_opacity_summary" formatted="false">The wallpaper shows through below 100%.</string>
@@ -124,9 +135,12 @@
     <string name="settings_scheme_exists">A color scheme with this name already exists</string>
     <string name="settings_scheme_missing">This color scheme no longer exists.</string>
     <string name="settings_schemes">Color schemes</string>
+    <string name="settings_screen_missing">This device has no settings screen for that. Look for it under Settings → Apps → ASL.</string>
     <string name="settings_set_default">Set as default</string>
     <string name="settings_set_default_scheme">Set as default</string>
     <string name="settings_set_default_user">Set default user</string>
+    <string name="settings_setup">First-time setup</string>
+    <string name="settings_setup_summary">Walk through the permissions the virtual machine needs again.</string>
     <string name="settings_starting_directory">Starting directory</string>
     <string name="settings_startup">Startup</string>
     <string name="settings_status">Status</string>

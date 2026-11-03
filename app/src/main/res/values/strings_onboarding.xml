@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_title">Set up ASL</string>
+    <string name="onboarding_body">A few permissions let the Linux virtual machine start and keep running in the background. You can change them later in Settings → Virtual machine.</string>
+    <string name="onboarding_done">Get started</string>
+    <string name="onboarding_skip">Skip for now</string>
+    <string name="onboarding_granted">✓ Done</string>
+    <string name="onboarding_required">Required</string>
+    <string name="onboarding_recommended">Recommended</string>
+    <string name="onboarding_optional">Optional</string>
+
+    <string name="onboarding_vm_title">Virtual machine access</string>
+    <string name="onboarding_vm_body">Android only grants these over adb. Connect the device to a computer with USB debugging on and run:</string>
+    <string name="onboarding_vm_action">Copy commands</string>
+
+    <string name="onboarding_notifications_title">Notifications</string>
+    <string name="onboarding_notifications_body">Shows that the virtual machine is running, with a button to shut it down.</string>
+    <string name="onboarding_notifications_action">Allow notifications</string>
+    <string name="onboarding_notifications_blocked">Notifications are blocked. Tap again to turn them on in settings.</string>
+
+    <string name="onboarding_battery_title">Unrestricted battery use</string>
+    <string name="onboarding_battery_body">Stops Android from pausing or killing the virtual machine while ASL is in the background.</string>
+    <string name="onboarding_battery_action">Allow unrestricted use</string>
+
+    <string name="onboarding_storage_title">All files access</string>
+    <string name="onboarding_storage_body">Shares Android\'s storage with Linux at /mnt/android.</string>
+    <string name="onboarding_storage_action">Allow access</string>
+</resources>
