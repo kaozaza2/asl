@@ -74,6 +74,34 @@
         app:selectable="false" />
 
     <PreferenceCategory
+        app:key="background"
+        app:title="@string/settings_background"
+        app:iconSpaceReserved="false">
+
+        <Preference
+            app:key="setup"
+            app:title="@string/settings_setup"
+            app:summary="@string/settings_setup_summary"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            app:key="battery"
+            app:title="@string/settings_battery"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            app:key="notifications"
+            app:title="@string/settings_notifications"
+            app:iconSpaceReserved="false" />
+
+        <SwitchPreferenceCompat
+            app:key="keepAwake"
+            app:title="@string/settings_keep_awake"
+            app:summary="@string/settings_keep_awake_summary"
+            app:iconSpaceReserved="false" />
+    </PreferenceCategory>
+
+    <PreferenceCategory
         app:key="console"
         app:title="@string/settings_console"
         app:iconSpaceReserved="false" />

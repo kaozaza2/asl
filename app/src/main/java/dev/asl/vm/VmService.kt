@@ -6,17 +6,27 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.os.PowerManager
 import androidx.lifecycle.LifecycleService
 import androidx.lifecycle.lifecycleScope
 import dev.asl.core.Asl
 import dev.asl.core.VmState
 import dev.asl.core.VmStatus
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
-/** Keeps the process in the foreground while the VM runs; stops itself once it is down. */
+/**
+ * Keeps the process in the foreground while the VM runs; stops itself once it is down. With
+ * `keepAwake` set it also holds a partial wake lock while the VM is running, so the guest keeps
+ * running with the screen off.
+ */
 class VmService : LifecycleService() {
     private val notifications by lazy { getSystemService(NotificationManager::class.java) }
+    private val wakeLock by lazy {
+        getSystemService(PowerManager::class.java).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "asl:vm").apply { setReferenceCounted(false) }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -29,6 +39,17 @@ class VmService : LifecycleService() {
                     else notifications.notify(NOTIFICATION_ID, notification(status, ports))
                 }
         }
+        lifecycleScope.launch {
+            // Held only while the guest is up, so a VM stuck starting or stopping can't keep the CPU awake.
+            combine(Asl.settings.settings.map { it.asl.keepAwake }, Asl.vm.status.map { it.state == VmState.Running }) { keep, running -> keep && running }
+                .distinctUntilChanged()
+                .collect { hold -> if (hold) wakeLock.acquire() else if (wakeLock.isHeld) wakeLock.release() }
+        }
+    }
+
+    override fun onDestroy() {
+        if (wakeLock.isHeld) wakeLock.release()
+        super.onDestroy()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -55,7 +76,7 @@ class VmService : LifecycleService() {
     }
 
     private companion object {
-        const val CHANNEL = "vm"
+        const val CHANNEL = VM_NOTIFICATION_CHANNEL
         const val NOTIFICATION_ID = 1
         const val ACTION_SHUTDOWN = "dev.asl.action.SHUTDOWN_VM"
     }

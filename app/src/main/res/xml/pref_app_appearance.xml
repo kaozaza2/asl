@@ -9,4 +9,10 @@
         app:iconSpaceReserved="false"
         app:entries="@array/settings_theme_entries"
         app:entryValues="@array/settings_theme_values" />
+
+    <SwitchPreferenceCompat
+        app:key="keepScreenOn"
+        app:title="@string/settings_keep_screen_on"
+        app:summary="@string/settings_keep_screen_on_summary"
+        app:iconSpaceReserved="false" />
 </PreferenceScreen>

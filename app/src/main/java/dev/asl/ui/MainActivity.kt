@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.view.HapticFeedbackConstants
 import android.view.KeyEvent
 import android.view.View
+import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
@@ -90,6 +91,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
         if (savedInstanceState == null) vm.handleIntent(intent)
         tone = runCatching { ToneGenerator(AudioManager.STREAM_NOTIFICATION, 60) }.getOrNull()
+        // Not over USB-attach or run-command launches: those open something the user asked for.
+        if (savedInstanceState == null && intent.action == Intent.ACTION_MAIN && OnboardingActivity.needed(this)) OnboardingActivity.start(this)
 
         ViewCompat.setOnApplyWindowInsetsListener(binding.root) { root, insets ->
             val cutout = insets.getInsets(WindowInsetsCompat.Type.displayCutout())
@@ -147,6 +150,12 @@ class MainActivity : AppCompatActivity() {
                 launch { vm.messages.collect { Snackbar.make(binding.mainContent, it, Snackbar.LENGTH_SHORT).show() } }
                 launch {
                     Asl.vm.status.collect { binding.mainVmProgress.isVisible = it.state == VmState.Starting || it.state == VmState.Stopping }
+                }
+                launch {
+                    Asl.settings.settings.map { it.keepScreenOn }.distinctUntilChanged().collect { on ->
+                        if (on) window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
                 }
                 launch {
                     Asl.settings.settings.map { it.launchMode }.distinctUntilChanged().collect { mode ->

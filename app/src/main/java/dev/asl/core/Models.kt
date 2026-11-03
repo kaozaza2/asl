@@ -8,6 +8,8 @@ data class AslSettings(
     val defaultProfile: String? = null,
     val theme: String = "dark",
     val launchMode: String = "default",
+    /** Keep the display on while ASL is in the foreground. */
+    val keepScreenOn: Boolean = false,
     val startupActions: String = "",
     val profiles: Profiles = Profiles(),
     val schemes: List<ColorScheme> = emptyList(),
@@ -72,6 +74,8 @@ data class VmSettings(
     val androidStoragePath: String = "/storage/emulated/0",
     val defaultDiskSizeGb: Int = 64,
     val autoStart: Boolean = false,
+    /** Hold a partial wake lock while the VM runs so the guest keeps running with the screen off. */
+    val keepAwake: Boolean = false,
 )
 
 @Serializable
