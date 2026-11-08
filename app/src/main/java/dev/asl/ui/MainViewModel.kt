@@ -87,7 +87,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         Asl.settings.settings.value.launchProfile(Asl.distros.distros.value)?.let(TabRegistry::openTab) ?: openSettings("distros")
     }
 
-    fun closeTab(tab: TerminalTab) = TabRegistry.closeTab(tab)
+    fun closeTab(tab: TerminalTab) {
+        TabRegistry.closeTab(tab)
+        // The registry doesn't know about the settings tab; fall back to it when it's the only one left.
+        if (selected.value == NO_TAB && _settingsOpen.value) selected.value = SETTINGS_TAB
+    }
 
     fun openSettings(page: String? = settingsPage.value) {
         _settingsOpen.value = true

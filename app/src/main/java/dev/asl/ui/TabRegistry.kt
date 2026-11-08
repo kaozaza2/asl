@@ -19,8 +19,6 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.serialization.builtins.ListSerializer
-import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -118,7 +116,9 @@ object TabRegistry {
     }
 
     private fun save() {
-        if (!::prefs.isInitialized) return
+        // Until restore() runs, the open list is only what this process opened since start; writing it
+        // would overwrite the persisted tabs that a process death right now would need.
+        if (!::prefs.isInitialized || pendingRestore != null) return
         val tabs = _tabs.value
         prefs.edit()
             .putString(TABS_KEY, Json.encodeToString(tabs.map { it.profile.guid }))
