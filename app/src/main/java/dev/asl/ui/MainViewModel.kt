@@ -9,7 +9,6 @@ import dev.asl.core.Asl
 import dev.asl.core.Distro
 import dev.asl.core.Profile
 import dev.asl.core.Progress
-import dev.asl.core.SessionRequest
 import dev.asl.settings.DISTRO_PROFILE_SOURCE
 import dev.asl.settings.distroProfile
 import dev.asl.settings.appearanceOf
@@ -37,10 +36,10 @@ class DistroTask(val label: String, val distroId: String? = null) {
 }
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
-    private val _tabs = MutableStateFlow<List<TerminalTab>>(emptyList())
-    val tabs: StateFlow<List<TerminalTab>> = _tabs.asStateFlow()
+    /** Tabs live in [TabRegistry] so sessions survive this ViewModel and the process behind them. */
+    val tabs: StateFlow<List<TerminalTab>> get() = TabRegistry.tabs
     /** A tab id, [SETTINGS_TAB], or none. */
-    val selected = MutableStateFlow(NO_TAB)
+    val selected = TabRegistry.selected
     private val _settingsOpen = MutableStateFlow(false)
     val settingsOpen: StateFlow<Boolean> = _settingsOpen.asStateFlow()
     val settingsPage = MutableStateFlow<String?>(null)
@@ -50,7 +49,6 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val _messages = Channel<String>(Channel.BUFFERED)
     /** One-shot errors for a snackbar. */
     val messages = _messages.receiveAsFlow()
-    private var nextTabId = 0L
 
     init {
         // Windows Terminal's WSL profile generator.
@@ -71,6 +69,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }
         }
+        // Restore the last run's tabs once the registries are loaded; start() already consumed the state
+        // of a process that survived task removal, so restored sessions are only relaunched after a death.
+        viewModelScope.launch {
+            Asl.distros.distros.collect { distros -> if (distros.isNotEmpty()) TabRegistry.restore() }
+        }
     }
 
     fun profileFor(distro: Distro): Profile {
@@ -78,43 +81,13 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         return Asl.settings.settings.value.profiles.list.firstOrNull { it.guid == generated.guid } ?: generated
     }
 
-    fun openTab(profile: Profile) {
-        val distros = Asl.distros.distros.value
-        val distroId = if (profile.distroId != null) {
-            distros.firstOrNull { it.id == profile.distroId }?.id
-        } else {
-            (distros.firstOrNull { it.isDefault } ?: distros.firstOrNull())?.id
-        }
-        val settings = Asl.settings.settings.value
-        val tab = TerminalTab(nextTabId++, profile, settings.appearanceOf(profile).scrollbackLines)
-        _tabs.update { it + tab }
-        selected.value = tab.id
-        tab.start(
-            viewModelScope,
-            getApplication(),
-            SessionRequest(
-                distroId = distroId,
-                user = profile.user?.takeIf { it.isNotBlank() },
-                cwd = profile.startingDirectory?.takeIf { it.isNotBlank() },
-                argv = listOfNotNull(profile.commandline?.takeIf { it.isNotBlank() }),
-            ),
-        )
-    }
+    fun openTab(profile: Profile) = TabRegistry.openTab(profile)
 
     fun openDefaultTab() {
-        Asl.settings.settings.value.launchProfile(Asl.distros.distros.value)?.let(::openTab) ?: openSettings("distros")
+        Asl.settings.settings.value.launchProfile(Asl.distros.distros.value)?.let(TabRegistry::openTab) ?: openSettings("distros")
     }
 
-    fun closeTab(tab: TerminalTab) {
-        val index = _tabs.value.indexOf(tab)
-        if (index < 0) return
-        val remaining = _tabs.value - tab
-        _tabs.value = remaining
-        tab.close()
-        if (selected.value == tab.id) {
-            selected.value = remaining.getOrNull(index.coerceAtMost(remaining.size - 1))?.id ?: if (_settingsOpen.value) SETTINGS_TAB else NO_TAB
-        }
-    }
+    fun closeTab(tab: TerminalTab) = TabRegistry.closeTab(tab)
 
     fun openSettings(page: String? = settingsPage.value) {
         _settingsOpen.value = true
@@ -124,7 +97,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun closeSettings() {
         _settingsOpen.value = false
-        if (selected.value == SETTINGS_TAB) selected.value = _tabs.value.lastOrNull()?.id ?: NO_TAB
+        if (selected.value == SETTINGS_TAB) selected.value = TabRegistry.tabs.value.lastOrNull()?.id ?: NO_TAB
     }
 
     val latches = object : TerminalSurface.Latches {
@@ -176,11 +149,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 Asl.usb.refresh()
                 openSettings("usb")
             }
-            else -> if (_tabs.value.isEmpty() && Asl.distros.distros.value.isNotEmpty()) openDefaultTab()
+            else -> if (tabs.value.isEmpty() && !TabRegistry.willRestore && Asl.distros.distros.value.isNotEmpty()) openDefaultTab()
         }
-    }
-
-    override fun onCleared() {
-        _tabs.value.forEach { it.close() }
     }
 }

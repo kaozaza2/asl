@@ -30,6 +30,9 @@ class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSess
     private var remote: AgentSession? = null
     private var job: Job? = null
     private val size = MutableStateFlow<Pair<Int, Int>?>(null)
+    private val _running = MutableStateFlow(false)
+    /** True from the start attempt until the remote session exits or the tab closes. */
+    val running: StateFlow<Boolean> = _running.asStateFlow()
 
     val terminal = TerminalSession(scrollback, this, object : TerminalSession.Host {
         override fun onInput(data: ByteArray, offset: Int, count: Int) {
@@ -44,6 +47,7 @@ class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSess
 
     fun start(scope: CoroutineScope, context: Context, request: SessionRequest) {
         job = scope.launch {
+            _running.value = true
             val missing = context.missingVmPermissions()
             if (missing.isNotEmpty()) {
                 return@launch end(
@@ -65,6 +69,7 @@ class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSess
                 withTimeoutOrNull(500) { pump.join() }
                 pump.cancel()
                 terminal.finish(code)
+                _running.value = false
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -105,6 +110,7 @@ class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSess
     override fun setTerminalShellPid(session: TerminalSession, pid: Int) = Unit
 
     fun close() {
+        _running.value = false
         job?.cancel()
         remote?.close()
     }
@@ -117,5 +123,6 @@ class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSess
     private fun end(message: String) {
         print("\r\n$message")
         terminal.finish(-1)
+        _running.value = false
     }
 }

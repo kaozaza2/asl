@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import dev.asl.core.Asl
 import dev.asl.distro.DistroRepository
 import dev.asl.settings.JsonSettingsRepository
+import dev.asl.ui.TabRegistry
 import dev.asl.usb.UsbIpPassthrough
 import dev.asl.vm.AvfVmController
 import kotlinx.coroutines.MainScope
@@ -23,6 +24,7 @@ class AslApp : Application() {
         Asl.vm = AvfVmController(this)
         Asl.distros = DistroRepository(this)
         Asl.usb = UsbIpPassthrough(this)
+        TabRegistry.start(this)
         MainScope().launch {
             Asl.settings.settings.map { it.theme }.distinctUntilChanged().collect {
                 AppCompatDelegate.setDefaultNightMode(NightModes[it] ?: AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
