@@ -1,6 +1,8 @@
 package dev.asl.ui.terminal
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import com.termux.terminal.TerminalSession
 import dev.asl.R
 import dev.asl.core.Asl
@@ -36,9 +38,33 @@ class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSess
     /** True from the start attempt until the remote session exits or the tab closes. */
     val running: StateFlow<Boolean> = _running.asStateFlow()
 
+    // Keyboard text arrives one code point per onInput (TerminalView.sendTextToTerminal), so a long paste
+    // through the IME would be one frame per character. Input is gathered here and sent once per
+    // main-loop pass instead, split into frames of at most MAX_INPUT_FRAME bytes.
+    private val pendingInput = java.io.ByteArrayOutputStream()
+    private var flushPosted = false
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val flushInput = Runnable {
+        val bytes = synchronized(pendingInput) {
+            flushPosted = false
+            pendingInput.toByteArray().also { pendingInput.reset() }
+        }
+        var offset = 0
+        while (offset < bytes.size) {
+            val end = minOf(bytes.size, offset + MAX_INPUT_FRAME)
+            remote?.write(bytes.copyOfRange(offset, end))
+            offset = end
+        }
+    }
+
     val terminal = TerminalSession(scrollback, this, object : TerminalSession.Host {
         override fun onInput(data: ByteArray, offset: Int, count: Int) {
-            remote?.write(data.copyOfRange(offset, offset + count))
+            synchronized(pendingInput) {
+                pendingInput.write(data, offset, count)
+                if (flushPosted) return
+                flushPosted = true
+            }
+            mainHandler.post(flushInput)
         }
 
         override fun onResize(columns: Int, rows: Int) {
@@ -116,6 +142,7 @@ class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSess
 
     fun close() {
         _running.value = false
+        mainHandler.removeCallbacks(flushInput)
         job?.cancel()
         remote?.close()
     }
@@ -129,5 +156,9 @@ class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSess
         print("\r\n$message")
         terminal.finish(-1)
         _running.value = false
+    }
+
+    private companion object {
+        const val MAX_INPUT_FRAME = 32 * 1024
     }
 }
