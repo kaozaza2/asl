@@ -11,6 +11,7 @@ import dev.asl.core.VmState
 import dev.asl.vm.missingVmPermissions
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
 
@@ -64,9 +66,12 @@ class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSess
                 val opened = Asl.vm.openSession(request.copy(cols = cols, rows = rows))
                 remote = opened
                 if (booting) print("\r\u001b[2K")
-                val pump = launch { opened.output.collect { terminal.feed(it, 0, it.size) } }
+                // feed() blocks while the screen's queue is full and the main thread is what drains it, so the
+                // pump must never run there; blocking here is the backpressure that slows a flood down.
+                val pump = launch(Dispatchers.IO) { opened.output.collect { terminal.feed(it, 0, it.size) } }
                 val code = opened.exitCode.await()
-                withTimeoutOrNull(500) { pump.join() }
+                // The output channel closes after the exit frame, so this only waits for the tail to drain.
+                withTimeoutOrNull(5_000) { pump.join() }
                 pump.cancel()
                 terminal.finish(code)
                 _running.value = false
@@ -115,12 +120,12 @@ class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSess
         remote?.close()
     }
 
-    private fun print(text: String) {
+    private suspend fun print(text: String) {
         val bytes = text.toByteArray()
-        terminal.feed(bytes, 0, bytes.size)
+        withContext(Dispatchers.IO) { terminal.feed(bytes, 0, bytes.size) }
     }
 
-    private fun end(message: String) {
+    private suspend fun end(message: String) {
         print("\r\n$message")
         terminal.finish(-1)
         _running.value = false

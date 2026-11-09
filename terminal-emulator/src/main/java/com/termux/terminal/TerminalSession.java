@@ -65,9 +65,24 @@ public final class TerminalSession extends TerminalOutput {
         return (mEmulator == null) ? null : mEmulator.getTitle();
     }
 
-    /** Process output; callable from any thread. */
+    /** Largest piece of output queued per main-thread wakeup; well under the queue's size. */
+    private static final int FEED_SLICE = 8 * 1024;
+
+    /**
+     * Process output; callable from any thread except the main thread. Blocks while the queue is full, which
+     * the main thread drains, so calling it there can deadlock once output outpaces the screen.
+     * <p/>
+     * Data goes in slices, each followed by a wakeup. A writer waiting on a full queue therefore always has a
+     * wakeup pending for the bytes ahead of it, even when one call carries more than the whole queue.
+     */
     public void feed(byte[] data, int offset, int count) {
-        if (mProcessToTerminalIOQueue.write(data, offset, count)) mMainThreadHandler.sendEmptyMessage(MSG_NEW_INPUT);
+        int end = offset + count;
+        while (offset < end) {
+            int slice = Math.min(FEED_SLICE, end - offset);
+            if (!mProcessToTerminalIOQueue.write(data, offset, slice)) return;
+            mMainThreadHandler.sendEmptyMessage(MSG_NEW_INPUT);
+            offset += slice;
+        }
     }
 
     /** Marks the remote process as exited; callable from any thread. */

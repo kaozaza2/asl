@@ -16,7 +16,9 @@ import java.nio.ByteBuffer
 internal class AgentSession(private val conn: AgentConnection, scope: CoroutineScope) : TerminalSession {
     private enum class Frame { DATA, RESIZE, EOF, STDERR, EXIT }
 
-    private val received = Channel<ByteArray>(Channel.UNLIMITED)
+    // Bounded: when the screen falls behind, send() suspends, the reader stops draining the vsock and the
+    // guest's pty blocks, instead of a fast command (`tree node_modules`) piling its output up in memory.
+    private val received = Channel<ByteArray>(RECEIVE_BUFFER_FRAMES)
     private val outgoing = Channel<Pair<Frame, ByteArray>>(Channel.UNLIMITED)
 
     override val output: Flow<ByteArray> = received.receiveAsFlow()
@@ -61,5 +63,11 @@ internal class AgentSession(private val conn: AgentConnection, scope: CoroutineS
     override fun close() {
         outgoing.trySend(Frame.EOF to ByteArray(0))
         outgoing.close()
+        // Unblocks a reader suspended on a full buffer that nothing will collect anymore.
+        received.cancel()
+    }
+
+    private companion object {
+        const val RECEIVE_BUFFER_FRAMES = 16
     }
 }
