@@ -298,6 +298,12 @@ class MainActivity : AppCompatActivity() {
         return true
     }
 
+    override fun onStop() {
+        super.onStop()
+        // Backgrounded is when Android is most likely to kill the process; keep the tabs' output current.
+        TabRegistry.saveOutput()
+    }
+
     override fun onDestroy() {
         surfaces.forEach { (tab, surface) -> if (tab.view === surface) tab.view = null }
         tone?.release()

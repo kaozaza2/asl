@@ -26,7 +26,20 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 
 /** One terminal tab: a Termux emulator fed by an agent session in the VM. */
-class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSessionClient {
+/**
+ * One terminal tab. [key] names its saved output on disk; [restoredOutput] is the text a tab of the previous
+ * process showed, replayed above the new session; [onOutput] runs on the main thread when the screen changes.
+ */
+class TerminalTab(
+    val id: Long,
+    val profile: Profile,
+    scrollback: Int,
+    val key: String = java.util.UUID.randomUUID().toString(),
+    private val restoredOutput: String? = null,
+    private val onOutput: () -> Unit = {},
+) : LogSessionClient {
+    /** Set when the screen changed since the last [transcript] snapshot; main thread only. */
+    var outputDirty = false
     private val _title = MutableStateFlow(profile.tabTitle ?: profile.name)
     val title: StateFlow<String> = _title.asStateFlow()
     var view: TerminalSurface? = null
@@ -76,6 +89,9 @@ class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSess
     fun start(scope: CoroutineScope, context: Context, request: SessionRequest) {
         job = scope.launch {
             _running.value = true
+            restoredOutput?.takeIf { it.isNotBlank() }?.let { text ->
+                print(text.replace("\n", "\r\n") + "\r\n\u001b[2m[output from the previous session]\u001b[0m\r\n")
+            }
             val missing = context.missingVmPermissions()
             if (missing.isNotEmpty()) {
                 return@launch end(
@@ -111,7 +127,12 @@ class TerminalTab(val id: Long, val profile: Profile, scrollback: Int) : LogSess
 
     override fun onTextChanged(changedSession: TerminalSession) {
         view?.onScreenUpdated()
+        outputDirty = true
+        onOutput()
     }
+
+    /** The normal screen's scrollback and screen as text, wrapped lines joined; main thread only. */
+    fun transcript(): String? = terminal.emulator?.mainBuffer?.transcriptText
 
     override fun onTitleChanged(changedSession: TerminalSession) {
         if (profile.tabTitle == null) terminal.title?.takeIf { it.isNotBlank() }?.let { _title.value = it }

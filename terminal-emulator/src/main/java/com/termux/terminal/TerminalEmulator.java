@@ -518,6 +518,11 @@ public final class TerminalEmulator {
         return mScreen;
     }
 
+    /** The normal screen and its scrollback, even while a full-screen program shows the alternate one. */
+    public TerminalBuffer getMainBuffer() {
+        return mMainBuffer;
+    }
+
     public int getRows() {
         return mRows;
     }
