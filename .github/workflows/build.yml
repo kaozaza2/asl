@@ -17,7 +17,7 @@ concurrency:
 jobs:
   agent:
     name: Guest agent checks
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
     defaults:
       run:
@@ -37,13 +37,13 @@ jobs:
     name: Guest kernel and initramfs
     # PRs check only the app build below; guest changes are validated by a dispatch run (or main).
     if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 150
     steps:
       - uses: actions/checkout@v7
-      - uses: docker/setup-buildx-action@v3
+      - uses: docker/setup-buildx-action@v4
       # Exposes the Actions cache to the buildx CLI, so the kernel is rebuilt only when guest/ changes.
-      - uses: crazy-max/ghaction-github-runtime@v3
+      - uses: crazy-max/ghaction-github-runtime@v4
       # When the kernel config does change, ccache from the previous build makes the rebuild incremental.
       - uses: actions/cache@v6
         id: ccache
@@ -70,7 +70,7 @@ jobs:
     name: Debug APK
     needs: guest
     if: github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
@@ -95,7 +95,7 @@ jobs:
   app:
     name: App build check
     if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
