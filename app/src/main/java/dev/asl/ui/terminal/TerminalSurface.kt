@@ -9,6 +9,7 @@ import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.MotionEvent
 import android.view.inputmethod.InputMethodManager
+import android.view.inputmethod.InputMethodSubtype
 import com.termux.terminal.KeyHandler
 import com.termux.terminal.TerminalEmulator
 import com.termux.terminal.TerminalSession
@@ -36,6 +37,15 @@ val ExtraKeyCodes = mapOf(
     "home" to KeyEvent.KEYCODE_MOVE_HOME, "end" to KeyEvent.KEYCODE_MOVE_END,
     "pgup" to KeyEvent.KEYCODE_PAGE_UP, "pgdn" to KeyEvent.KEYCODE_PAGE_DOWN,
 )
+
+/**
+ * The subtype's language: its BCP 47 [InputMethodSubtype.getLanguageTag], or for input methods that leave
+ * that empty, the legacy locale string. `locale` is deprecated in favor of `languageTag`, which has no
+ * fallback of its own, so it stays here only for those input methods.
+ */
+private val InputMethodSubtype.language: String
+    @Suppress("DEPRECATION")
+    get() = languageTag.ifEmpty { locale }
 
 @SuppressLint("ViewConstructor")
 class TerminalSurface(
@@ -170,7 +180,7 @@ class TerminalSurface(
         }
         val physical = e.flags and KeyEvent.FLAG_SOFT_KEYBOARD == 0 && !e.isCtrlPressed && !e.isAltPressed && !e.isMetaPressed
         val subtype = context.getSystemService(InputMethodManager::class.java).currentInputMethodSubtype
-        if (!physical || subtype?.languageTag?.ifEmpty { subtype.locale }?.startsWith("th") != true) return false
+        if (!physical || subtype?.language?.startsWith("th") != true) return false
         val (base, shifted) = thaiKeys[keyCode] ?: return false
         session.writeCodePoint(false, if (e.isShiftPressed || e.isCapsLockOn) shifted else base)
         return true
