@@ -5,6 +5,7 @@
     <!-- Granted with `adb shell pm grant dev.asl ...`; see README. -->
     <uses-permission android:name="android.permission.MANAGE_VIRTUAL_MACHINE" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.USE_CUSTOM_VIRTUAL_MACHINE" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.READ_LOGS" tools:ignore="ProtectedPermissions" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />

@@ -36,6 +36,10 @@ With a physical keyboard attached, the terminal behaves like iTerm: **cmd+T** op
   adb shell pm grant dev.asl android.permission.USE_CUSTOM_VIRTUAL_MACHINE
   adb shell am force-stop dev.asl
   ```
+- Optionally, grant `READ_LOGS` so a failed boot shows crosvm's own error in the console log (Settings → Virtual machine):
+  ```sh
+  adb shell pm grant dev.asl android.permission.READ_LOGS
+  ```
 - For `/mnt/android`, allow all-files access in Settings → Virtual machine.
 
 ## Building

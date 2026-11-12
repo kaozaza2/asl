@@ -1,7 +1,9 @@
 package dev.asl.vm
 
+import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Environment
 import android.os.ParcelFileDescriptor
 import android.util.Log
@@ -83,6 +85,7 @@ class AvfVmController(context: Context) : VmController {
     @Volatile private var vm: Any? = null
     @Volatile private var control: Control? = null
     @Volatile private var stopRequested = false
+    @Volatile private var bootStartedAt = 0L
     private var boot: Deferred<Unit>? = null
 
     init {
@@ -166,6 +169,7 @@ class AvfVmController(context: Context) : VmController {
 
     private suspend fun start() {
         stopRequested = false
+        bootStartedAt = System.currentTimeMillis()
         _status.value = VmStatus(VmState.Starting, "Preparing VM images")
         try {
             val settings = Asl.settings.settings.value.asl
@@ -274,7 +278,37 @@ class AvfVmController(context: Context) : VmController {
         control = null
         forwarder.update(emptyList())
         _runningDistros.value = emptySet()
+        // A failed boot reports twice (callback, then start()'s catch); diagnose only the first.
+        if (error != null && !stopRequested && _status.value.state != VmState.Error) scope.launch { appendFailureReport(error) }
         _status.value = if (error == null || stopRequested) VmStatus(VmState.Stopped) else VmStatus(VmState.Error, error)
+    }
+
+    private suspend fun appendFailureReport(error: String) = withContext(Dispatchers.IO) {
+        delay(HOST_LOG_SETTLE_MS)
+        val since = bootStartedAt
+        // crosvm and virtmgr lines from this boot, or null without READ_LOGS.
+        val lines = if (context.checkSelfPermission(Manifest.permission.READ_LOGS) != PackageManager.PERMISSION_GRANTED) null else runCatching {
+            val process = ProcessBuilder("logcat", "-d", "-v", "time", "-T", "%d.%03d".format(since / 1000, since % 1000), "-s", "crosvm", "virtmgr")
+                .redirectErrorStream(true).start()
+            // Android may hold the read until the user answers its log-access prompt.
+            val timeout = launch { delay(HOST_LOG_TIMEOUT_MS); process.destroy() }
+            try {
+                process.inputStream.bufferedReader().readLines().filterNot { it.startsWith("---------") }.takeLast(HOST_LOG_LINES)
+            } finally {
+                timeout.cancel()
+            }
+        }.getOrElse { listOf("logcat failed: ${it.message}") }
+        val report = buildString {
+            append("\n[asl] $error\n")
+            when {
+                lines == null -> append("[asl] Grant READ_LOGS so ASL can show why crosvm stopped:\n${context.vmGrantCommands(listOf(Manifest.permission.READ_LOGS))}\n")
+                lines.isEmpty() -> append("[asl] No crosvm log lines were readable; allow ASL to access device logs when Android asks.\n")
+                else -> lines.forEach { append("[host] $it\n") }
+            }
+            StartFailureHints.entries.firstOrNull { (pattern, _) -> lines.orEmpty().any { pattern in it } }
+                ?.let { append("[asl] ${it.value}\n") }
+        }
+        _consoleLog.update { (it + report).takeLast(CONSOLE_LIMIT) }
     }
 
     /** The `control` service: id-correlated requests plus pushed events. */
@@ -350,6 +384,14 @@ class AvfVmController(context: Context) : VmController {
         const val AGENT_TIMEOUT_MS = 90_000L
         const val REQUEST_TIMEOUT_MS = 30_000L
         const val MAX_CPUS = 4
+        const val HOST_LOG_SETTLE_MS = 500L
+        const val HOST_LOG_TIMEOUT_MS = 10_000L
+        const val HOST_LOG_LINES = 40
         val IMAGES = listOf("Image", "initrd.img")
+        val StartFailureHints = mapOf(
+            "Bad address" to "The hypervisor refused the guest's memory size, which GenieZone does after long uptime. " +
+                "Lower Memory in Settings → Virtual machine, or reboot the device.",
+            "Cannot allocate memory" to "The host ran out of memory for the guest. Close other apps or lower Memory in Settings → Virtual machine.",
+        )
     }
 }
