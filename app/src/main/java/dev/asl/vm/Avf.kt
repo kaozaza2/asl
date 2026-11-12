@@ -9,7 +9,17 @@ import java.util.concurrent.Executor
 /** Reflective facade over the hidden android.system.virtualmachine API. */
 internal object Avf {
     private const val TAG = "Avf"
+    // VirtualMachineCallback.STOP_REASON_* (hidden-API values).
     private const val STOP_REASON_SHUTDOWN = 3
+    private val StopReasons = mapOf(
+        -1 to "The virtualization service died",
+        0 to "AVF hit an infrastructure error",
+        1 to "The VM was killed",
+        2 to "The VM stopped for an unknown reason",
+        4 to "crosvm could not start the VM",
+        5 to "The guest rebooted, possibly after a kernel panic",
+        6 to "crosvm or the guest crashed",
+    )
 
     // VirtualMachineConfig.CPU_TOPOLOGY_ONE_CPU / CPU_TOPOLOGY_MATCH_HOST (hidden-API values).
     private const val CPU_TOPOLOGY_ONE_CPU = 0
@@ -102,7 +112,10 @@ internal object Avf {
         val callback = Proxy.newProxyInstance(type.classLoader, arrayOf(type)) { self, method, args ->
             when (method.name) {
                 "onError" -> onStop("AVF error ${args?.get(1)}: ${args?.get(2)}")
-                "onStopped" -> onStop(if (args?.get(1) == STOP_REASON_SHUTDOWN) null else "VM stopped (AVF reason ${args?.get(1)})")
+                "onStopped" -> {
+                    val reason = args?.get(1)
+                    onStop(if (reason == STOP_REASON_SHUTDOWN) null else "${StopReasons[reason] ?: "The VM stopped"} (AVF reason $reason)")
+                }
                 "hashCode" -> System.identityHashCode(self)
                 "equals" -> self === args?.get(0)
                 "toString" -> "AslVmCallback"
