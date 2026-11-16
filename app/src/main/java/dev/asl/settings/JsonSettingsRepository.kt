@@ -7,7 +7,6 @@ import dev.asl.core.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,7 +34,6 @@ class JsonSettingsRepository(context: Context) : SettingsRepository {
     init {
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             state.collectLatest { settings ->
-                delay(200)
                 val out = atomic.startWrite()
                 try {
                     out.write(SettingsJson.encodeToString(settings).toByteArray())
