@@ -46,7 +46,7 @@ fun Context.importFont(uri: Uri): String {
     val target = File(fontsDir().apply { mkdirs() }, "$name.$ext")
     val staging = File(target.parentFile, "$name.$ext.part")
     contentResolver.openInputStream(uri)?.use { input -> staging.outputStream().use(input::copyTo) } ?: throw IOException("Cannot read $display")
-    if (Typeface.Builder(staging).build() == null) {
+    runCatching { Typeface.Builder(staging).build() }.getOrNull() ?: run {
         staging.delete()
         throw IOException("$display is not a usable font")
     }

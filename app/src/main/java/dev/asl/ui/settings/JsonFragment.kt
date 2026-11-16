@@ -28,7 +28,7 @@ class JsonFragment : Fragment(R.layout.settings_json) {
                 val parsed = SettingsJson.decodeFromString<AslSettings>(b.editor.text.toString())
                 Asl.settings.update { parsed }
                 reset()
-            } catch (e: IllegalArgumentException) {
+            } catch (e: Exception) {
                 b.error.text = e.message ?: getString(R.string.settings_json_invalid)
                 b.error.isVisible = true
                 b.editorLayout.error = " "

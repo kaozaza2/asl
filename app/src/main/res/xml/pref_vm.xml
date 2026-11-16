@@ -37,11 +37,6 @@
             app:summary="@string/settings_kernel_cmdline_summary"
             app:iconSpaceReserved="false" />
 
-        <SwitchPreferenceCompat
-            app:key="autoStart"
-            app:title="@string/settings_auto_start"
-            app:summary="@string/settings_auto_start_summary"
-            app:iconSpaceReserved="false" />
     </PreferenceCategory>
 
     <PreferenceCategory

@@ -145,6 +145,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        onBackPressedDispatcher.addCallback(this, back)
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 launch { vm.messages.collect { Snackbar.make(binding.mainContent, it, Snackbar.LENGTH_SHORT).show() } }
@@ -255,10 +256,8 @@ class MainActivity : AppCompatActivity() {
         binding.mainEmptyBody.setText(if (distros.isEmpty()) R.string.main_no_distros_body else R.string.main_no_tabs_body)
         binding.mainEmptyAction.setText(if (distros.isEmpty()) R.string.main_install_distro else R.string.main_open_tab)
 
-        // Re-adding keeps this above callbacks the settings fragment registered later.
+        // Keep this callback above any the settings fragment registers later.
         back.isEnabled = selected != SETTINGS_TAB
-        back.remove()
-        onBackPressedDispatcher.addCallback(this@MainActivity, back)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

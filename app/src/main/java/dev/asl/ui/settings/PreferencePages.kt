@@ -270,7 +270,6 @@ class VmFragment : StorePreferenceFragment() {
         "processors" to Field({ if (it.asl.matchHostCpus) "host" else "one" }, { s, v -> s.copy(asl = s.asl.copy(matchHostCpus = v == "host")) }),
         "defaultDiskSizeGb" to intField(1..2048, " GB", { it.asl.defaultDiskSizeGb }) { s, v -> s.copy(asl = s.asl.copy(defaultDiskSizeGb = v)) },
         "kernelCommandLine" to Field({ it.asl.kernelCommandLine }, { s, v -> s.copy(asl = s.asl.copy(kernelCommandLine = v as String? ?: "")) }, monospace = true),
-        "autoStart" to Field({ it.asl.autoStart }, { s, v -> s.copy(asl = s.asl.copy(autoStart = v as Boolean)) }),
         "keepAwake" to Field({ it.asl.keepAwake }, { s, v -> s.copy(asl = s.asl.copy(keepAwake = v as Boolean)) }),
         "mountAndroidStorage" to Field({ it.asl.mountAndroidStorage }, { s, v -> s.copy(asl = s.asl.copy(mountAndroidStorage = v as Boolean)) }),
         "androidStoragePath" to Field(

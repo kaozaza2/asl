@@ -47,11 +47,14 @@ class PortForwarder(private val open: (header: JsonObject) -> AgentConnection) {
                             val down = thread(isDaemon = true, name = "asl-fwd-$port-down") {
                                 runCatching { conn.input.copyTo(client.getOutputStream()); client.shutdownOutput() }.onFailure { abort() }
                             }
-                            runCatching { client.getInputStream().copyTo(conn.output); conn.shutdownOutput() }.onFailure { abort() }
-                            down.join()
-                            abort()
-                            active.decrementAndGet()
-                            publish()
+                            try {
+                                runCatching { client.getInputStream().copyTo(conn.output); conn.shutdownOutput() }.onFailure { abort() }
+                                down.join()
+                            } finally {
+                                abort()
+                                active.decrementAndGet()
+                                publish()
+                            }
                         }
                     }
                 }

@@ -10,7 +10,6 @@ data class AslSettings(
     val launchMode: String = "default",
     /** Keep the display on while ASL is in the foreground. */
     val keepScreenOn: Boolean = false,
-    val startupActions: String = "",
     val profiles: Profiles = Profiles(),
     val schemes: List<ColorScheme> = emptyList(),
     val asl: VmSettings = VmSettings(),
@@ -73,7 +72,6 @@ data class VmSettings(
     val mountAndroidStorage: Boolean = true,
     val androidStoragePath: String = "/storage/emulated/0",
     val defaultDiskSizeGb: Int = 64,
-    val autoStart: Boolean = false,
     /** Hold a partial wake lock while the VM runs so the guest keeps running with the screen off. */
     val keepAwake: Boolean = false,
 )
@@ -88,7 +86,6 @@ data class Distro(
     val systemd: Boolean = false,
     val hostname: String? = null,
     val source: String? = null,
-    val createdAt: Long = 0,
     val pendingImport: Boolean = false,
     /** Set until the image's /etc/wsl-distribution.conf [oobe] has run (or the image has none). */
     val oobePending: Boolean = false,

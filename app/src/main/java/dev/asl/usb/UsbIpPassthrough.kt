@@ -110,7 +110,7 @@ class UsbIpPassthrough(context: Context) : UsbPassthrough {
         synchronized(jobs) {
             if (servers.containsKey(key) || jobs[key]?.isActive == true) return
             errors.remove(key)
-            jobs[key] = scope.launch {
+            val job = scope.launch {
                 var connection: UsbDeviceConnection? = null
                 try {
                     connection = manager.openDevice(device) ?: error("Cannot open ${device.deviceName}")
@@ -150,6 +150,8 @@ class UsbIpPassthrough(context: Context) : UsbPassthrough {
                     refresh()
                 }
             }
+            jobs[key] = job
+            job.invokeOnCompletion { synchronized(jobs) { if (jobs[key] === job) jobs.remove(key) } }
         }
     }
 

@@ -151,7 +151,7 @@ class DistroRepository(private val context: Context) : DistroManager {
             val id = UUID.randomUUID().toString()
             val disk = File(disks, "$id.img")
             val distro = Distro(id = id, name = name, diskPath = disk.absolutePath, source = source,
-                createdAt = System.currentTimeMillis(), pendingImport = true, oobePending = true)
+                pendingImport = true, oobePending = true)
             try {
                 onProgress(Progress("prepare"))
                 RandomAccessFile(disk, "rw").use { it.setLength(Asl.settings.settings.value.asl.defaultDiskSizeGb.toLong() shl 30) }
