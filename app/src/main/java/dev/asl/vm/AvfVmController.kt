@@ -252,6 +252,14 @@ class AvfVmController(context: Context) : VmController {
                 put("androidMount", androidMount)
             })
             _status.value = VmStatus(VmState.Running)
+            Asl.analytics.recordBoot(true, System.currentTimeMillis() - bootStartedAt)
+
+            scope.launch {
+                while (vm === machine && _status.value.state == VmState.Running) {
+                    Asl.analytics.sampleResources(context)
+                    delay(5000)
+                }
+            }
 
             if (androidMount != null) {
                 thread(isDaemon = true, name = "asl-9p") {
@@ -264,6 +272,7 @@ class AvfVmController(context: Context) : VmController {
         } catch (e: Throwable) {
             val machine = vm
             machine?.let { runCatching { Avf.call(it, "stop") } }
+            if (e !is CancellationException) Asl.analytics.recordBoot(false, System.currentTimeMillis() - bootStartedAt, e.message ?: e.toString())
             onVmStopped(machine, if (e is CancellationException) null else e.message ?: e.toString())
             throw e
         }

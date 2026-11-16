@@ -103,6 +103,7 @@ class TerminalTab(
             val booting = Asl.vm.status.value.state != VmState.Running
             if (booting) print(context.getString(R.string.main_vm_starting))
             try {
+                val sessionStart = System.currentTimeMillis()
                 Asl.vm.ensureRunning()
                 val (cols, rows) = size.filterNotNull().first()
                 val opened = Asl.vm.openSession(request.copy(cols = cols, rows = rows))
@@ -116,6 +117,7 @@ class TerminalTab(
                 withTimeoutOrNull(5_000) { pump.join() }
                 pump.cancel()
                 terminal.finish(code)
+                Asl.analytics.recordSessionDuration(System.currentTimeMillis() - sessionStart)
                 _running.value = false
             } catch (e: CancellationException) {
                 throw e

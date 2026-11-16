@@ -30,6 +30,7 @@ private class NavEntry(val key: String, val label: Int, val icon: Int, val group
 private val NavEntries = listOf(
     NavEntry("startup", R.string.settings_startup, R.drawable.ic_settings_startup, NavGroup.General, ::StartupFragment),
     NavEntry("appearance", R.string.settings_appearance, R.drawable.ic_settings_appearance, NavGroup.General, ::AppearanceFragment),
+    NavEntry("analytics", R.string.settings_analytics, R.drawable.ic_settings_vm, NavGroup.General, ::AnalyticsFragment),
     NavEntry("schemes", R.string.settings_schemes, R.drawable.ic_settings_schemes, NavGroup.General, ::SchemesFragment),
     NavEntry("defaults", R.string.settings_defaults, R.drawable.ic_settings_defaults, NavGroup.Profiles, ::ProfileFragment),
     NavEntry("distros", R.string.settings_distros, R.drawable.ic_settings_distros, NavGroup.Linux, ::DistrosFragment),

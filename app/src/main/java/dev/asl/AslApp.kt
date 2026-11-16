@@ -24,6 +24,7 @@ class AslApp : Application() {
         Asl.vm = AvfVmController(this)
         Asl.distros = DistroRepository(this)
         Asl.usb = UsbIpPassthrough(this)
+        Asl.analytics = dev.asl.analytics.AnalyticsRepository(this)
         TabRegistry.start(this)
         MainScope().launch {
             Asl.settings.settings.map { it.theme }.distinctUntilChanged().collect {

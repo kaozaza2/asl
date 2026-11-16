@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_actions">Actions</string>
+    <string name="settings_analytics">Analytics</string>
     <string name="settings_add_new">Add new</string>
     <string name="settings_add_profile">Add a new profile</string>
     <string name="settings_advanced">Advanced</string>

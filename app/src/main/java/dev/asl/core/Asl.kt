@@ -6,4 +6,5 @@ object Asl {
     lateinit var vm: VmController
     lateinit var distros: DistroManager
     lateinit var usb: UsbPassthrough
+    lateinit var analytics: dev.asl.analytics.AnalyticsRepository
 }

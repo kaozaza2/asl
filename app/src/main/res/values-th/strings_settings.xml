@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_actions">การดำเนินการ</string>
+    <string name="settings_analytics">การวิเคราะห์</string>
     <string name="settings_add_new">เพิ่มใหม่</string>
     <string name="settings_add_profile">เพิ่มโปรไฟล์ใหม่</string>
     <string name="settings_advanced">ขั้นสูง</string>

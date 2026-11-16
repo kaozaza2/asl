@@ -70,6 +70,9 @@ object TabRegistry {
                 if (list.isEmpty()) flowOf(0) else combine(list.map { it.running }) { runs -> runs.count { it } }
             }.collect { _runningSessions.value = it }
         }
+        scope.launch {
+            _tabs.collect { tabs -> Asl.analytics.recordTabCount(tabs.size) }
+        }
         // Persisting the open list and selection covers both graceful changes and a sudden process death.
         scope.launch { _tabs.collect { save() } }
         scope.launch { selected.collect { save() } }
@@ -134,6 +137,7 @@ object TabRegistry {
         }
         _tabs.update { it + tab }
         selected.value = tab.id
+        distroId?.let { Asl.analytics.recordDistroUsage(it) }
         tab.start(
             scope,
             appContext,
