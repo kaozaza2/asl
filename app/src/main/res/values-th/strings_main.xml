@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="main_new_tab">แท็บใหม่</string>
+    <string name="main_open_profile">เปิดโปรไฟล์</string>
+    <string name="main_close_tab">ปิดแท็บ</string>
+    <string name="main_settings">การตั้งค่า</string>
+    <string name="main_no_distros">ยังไม่ได้ติดตั้งดิสทริบิวชัน Linux</string>
+    <string name="main_no_distros_body">ติดตั้งดิสทริบิวชันจากแคตาล็อก หรือนำเข้ารูทไฟล์ซิสเต็ม tarball</string>
+    <string name="main_install_distro">ติดตั้งดิสทริบิวชัน</string>
+    <string name="main_no_tabs">ไม่มีแท็บที่เปิดอยู่</string>
+    <string name="main_no_tabs_body">เปิดโปรไฟล์เพื่อเริ่มเชลล์</string>
+    <string name="main_open_tab">เปิดแท็บใหม่</string>
+</resources>

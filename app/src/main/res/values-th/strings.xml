@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">ASL</string>
+    <string name="main_vm_permission">ASL ต้องการสิทธิ์ในการเรียกใช้งานเครื่องเสมือน</string>
+    <string name="main_vm_adb_command">จากคอมพิวเตอร์ที่มี adb ให้เรียกใช้:</string>
+    <string name="main_vm_starting">กำลังเริ่มเครื่องเสมือน ASL…</string>
+    <string name="main_no_distro_name">ไม่มีดิสทริบิวชันที่มีชื่อที่ระบุ</string>
+</resources>

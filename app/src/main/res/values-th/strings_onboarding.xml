@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="onboarding_title">ตั้งค่า ASL</string>
+    <string name="onboarding_body">สิทธิ์บางอย่างช่วยให้เครื่องเสมือน Linux เริ่มทำงานและทำงานต่อในพื้นหลังได้ คุณสามารถเปลี่ยนแปลงได้ภายหลังที่ การตั้งค่า → เครื่องเสมือน</string>
+    <string name="onboarding_done">เริ่มใช้งาน</string>
+    <string name="onboarding_skip">ข้ามไปก่อน</string>
+    <string name="onboarding_granted">✓ เสร็จสิ้น</string>
+    <string name="onboarding_required">จำเป็น</string>
+    <string name="onboarding_recommended">แนะนำ</string>
+    <string name="onboarding_optional">ไม่บังคับ</string>
+
+    <string name="onboarding_vm_title">การเข้าถึงเครื่องเสมือน</string>
+    <string name="onboarding_vm_body">Android อนุญาตสิทธิ์เหล่านี้ผ่าน adb เท่านั้น เชื่อมต่ออุปกรณ์กับคอมพิวเตอร์ที่เปิด USB debugging แล้วเรียกใช้:</string>
+    <string name="onboarding_vm_action">คัดลอกคำสั่ง</string>
+
+    <string name="onboarding_notifications_title">การแจ้งเตือน</string>
+    <string name="onboarding_notifications_body">แสดงสถานะว่าเครื่องเสมือนกำลังทำงาน พร้อมปุ่มปิดเครื่อง</string>
+    <string name="onboarding_notifications_action">อนุญาตการแจ้งเตือน</string>
+    <string name="onboarding_notifications_blocked">การแจ้งเตือนถูกปิดใช้งาน แตะอีกครั้งเพื่อเปิดในการตั้งค่า</string>
+
+    <string name="onboarding_battery_title">ใช้งานแบตเตอรี่แบบไม่จำกัด</string>
+    <string name="onboarding_battery_body">ป้องกันไม่ให้ Android หยุดหรือฆ่าเครื่องเสมือนขณะที่ ASL อยู่ในพื้นหลัง</string>
+    <string name="onboarding_battery_action">อนุญาตการใช้งานแบบไม่จำกัด</string>
+
+    <string name="onboarding_storage_title">การเข้าถึงไฟล์ทั้งหมด</string>
+    <string name="onboarding_storage_body">แชร์พื้นที่จัดเก็บของ Android กับ Linux ที่ /mnt/android</string>
+    <string name="onboarding_storage_action">อนุญาตการเข้าถึง</string>
+</resources>
